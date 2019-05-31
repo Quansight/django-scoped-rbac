@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from .models import Role, RoleAssignment
+from .models import RoleAssignment
 from .policy import ALLOWED, RecursivePolicyMap
 
 

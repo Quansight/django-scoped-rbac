@@ -60,7 +60,7 @@ class AllowedPolicy(Policy):
 class ExpressionPolicy(Policy):
     """
     Expression policies are initialized with a `dict` detailing the parameters
-    to use in evaluating the expression to determine whether the policy 
+    to use in evaluating the expression to determine whether the policy
     conditions are met.
     """
 
@@ -71,7 +71,7 @@ class ExpressionPolicy(Policy):
         raise "Not implemented"
 
     def should_allow(self, permission, context_id, resource=None):
-        return evaluate(self, permission, context_id, resource)
+        return self.evaluate(self, permission, context_id, resource)
 
 
 class PolicyList(Policy):

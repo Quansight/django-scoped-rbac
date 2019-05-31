@@ -2,9 +2,8 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.urls import reverse
 from .registry import ResourceType
-from .policy_json import policy_from_json
+from .policy_json import json_loads_policy
 from .registry import register_access_controlled_model
 
 

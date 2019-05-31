@@ -1,9 +1,6 @@
-import factory
-from django.db import connection, models
-from django.db.models.base import ModelBase
 from django.test import TestCase
 from faker import Faker
-from scoped_rbac.models import AccessControlled, Context, RbacContext, Role, RoleAssignment
+from scoped_rbac.models import Context, Role
 from scoped_rbac.registry import RbacRegistry
 from tests.models import ExampleRbacContext
 
@@ -16,11 +13,9 @@ class RbacContextTestCase(TestCase):
 
     def test_simple_creation(self):
         fake = Faker()
-        example = ExampleRbacContext(
-            name=fake.pystr(min_chars=1, max_chars=128)
-        )
+        example = ExampleRbacContext(name=fake.pystr(min_chars=1, max_chars=128))
         example.save()
-        assert example.rbac_context != None
+        assert example.rbac_context is not None
         assert isinstance(example.rbac_context, Context)
 
 

@@ -1,10 +1,10 @@
 from collections import namedtuple
-from textwrap import dedent
 from typing import List
 
 
 ResourceType = namedtuple("ResourceType", "iri display_name description")
 Action = namedtuple("Action", "iri display_name, description")
+
 
 class RbacRegistry:
     ACTIONS = list()
@@ -12,7 +12,6 @@ class RbacRegistry:
 
     _processed_model_classes = False
     _ACCESS_CONTROLLED_MODEL_CLASSES = list()
-
 
     @classmethod
     def known_resource_types(cls):
@@ -36,5 +35,5 @@ def register_resource_types(*args: List[ResourceType]):
     RbacRegistry.CACHED_RESOURCE_TYPES.extend(args)
 
 
-def register_actions(*args: List[Action]):
+def register_actions(*actions: List[Action]):
     RbacRegistry.ACTIONS.extend(*actions)

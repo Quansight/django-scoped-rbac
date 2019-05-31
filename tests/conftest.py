@@ -1,7 +1,5 @@
 import os
 import sys
-import django
-from django.core import management
 
 
 def pytest_addoption(parser):
@@ -29,16 +27,14 @@ def pytest_configure(config):
         USE_L10N=True,
         STATIC_URL="/static/",
         ROOT_URLCONF="tests.urls",
-        TEMPLATES=[
-            {
-                "BACKEND": "django.template.backends.django.DjangoTemplates",
-                "APP_DIRS": True,
-                "OPTIONS": {"debug": True},  # We want template errors to raise
-            }
-        ],
+        TEMPLATE_LOADERS=(
+            'django.template.loaders.filesystem.Loader',
+            'django.template.loaders.app_directories.Loader',
+        ),
         MIDDLEWARE=(
             "django.middleware.common.CommonMiddleware",
             "django.contrib.sessions.middleware.SessionMiddleware",
+            'django.middleware.csrf.CsrfViewMiddleware',
             "django.contrib.auth.middleware.AuthenticationMiddleware",
             "django.contrib.messages.middleware.MessageMiddleware",
         ),
@@ -48,22 +44,71 @@ def pytest_configure(config):
             "django.contrib.contenttypes",
             "django.contrib.sessions",
             "django.contrib.sites",
+            'django.contrib.messages',
             "django.contrib.staticfiles",
+
             "rest_framework",
             "rest_framework.authtoken",
+
             "scoped_rbac",
             "tests",
         ),
-        PASSWORD_HASHERS=("django.contrib.auth.hashers.MD5PasswordHasher",),
+        PASSWORD_HASHERS=(
+            'django.contrib.auth.hashers.SHA1PasswordHasher',
+            'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+            'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+            'django.contrib.auth.hashers.BCryptPasswordHasher',
+            'django.contrib.auth.hashers.MD5PasswordHasher',
+            'django.contrib.auth.hashers.CryptPasswordHasher',
+        ),
     )
+
+    try:
+        import oauth_provider  # NOQA
+        import oauth2  # NOQA
+    except ImportError:
+        pass
+    else:
+        settings.INSTALLED_APPS += (
+            'oauth_provider',
+        )
+
+    try:
+        import provider  # NOQA
+    except ImportError:
+        pass
+    else:
+        settings.INSTALLED_APPS += (
+            'provider',
+            'provider.oauth2',
+        )
+
+    # guardian is optional
+    try:
+        import guardian  # NOQA
+    except ImportError:
+        pass
+    else:
+        settings.ANONYMOUS_USER_ID = -1
+        settings.AUTHENTICATION_BACKENDS = (
+            'django.contrib.auth.backends.ModelBackend',
+            'guardian.backends.ObjectPermissionBackend',
+        )
+        settings.INSTALLED_APPS += (
+            'guardian',
+        )
 
     if config.getoption("--no-pkgroot"):
         sys.path.pop(0)
 
         # import rest_framework before pytest re-adds the package root directory.
-        import scoped_rbac
+        import scoped_rbac # NOQA
 
         package_dir = os.path.join(os.getcwd(), "scoped_rbac")
-        assert not rest_framework.__file__.startswith(package_dir)
+        assert not scoped_rbac.__file__.startswith(package_dir)
 
-    django.setup()
+    try:
+        import django # NOQA
+        django.setup()
+    except AttributeError:
+        pass

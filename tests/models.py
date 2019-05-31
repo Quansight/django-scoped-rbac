@@ -1,5 +1,5 @@
 from django.db import models
-from scoped_rbac.models import AccessControlled, RbacContext
+from scoped_rbac.models import RbacContext
 
 
 class ScopedRbacModel(models.Model):
@@ -9,6 +9,6 @@ class ScopedRbacModel(models.Model):
         app_label = "tests"
         abstract = True
 
+
 class ExampleRbacContext(ScopedRbacModel, RbacContext):
     name = models.CharField(max_length=128)
-
