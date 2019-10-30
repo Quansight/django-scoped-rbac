@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class RbacConfig(AppConfig):
-    name = 'rbac'
+class ScopedRbacConfig(AppConfig):
+    name = 'scoped_rbac'

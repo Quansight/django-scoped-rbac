@@ -64,8 +64,8 @@ def pytest_configure(config):
     )
 
     try:
-        import oauth_provider  # NOQA
-        import oauth2  # NOQA
+        import oauth_provider  # noqa
+        import oauth2  # noqa
     except ImportError:
         pass
     else:
@@ -74,7 +74,7 @@ def pytest_configure(config):
         )
 
     try:
-        import provider  # NOQA
+        import provider  # noqa
     except ImportError:
         pass
     else:
@@ -85,7 +85,7 @@ def pytest_configure(config):
 
     # guardian is optional
     try:
-        import guardian  # NOQA
+        import guardian  # noqa
     except ImportError:
         pass
     else:
@@ -101,14 +101,14 @@ def pytest_configure(config):
     if config.getoption("--no-pkgroot"):
         sys.path.pop(0)
 
-        # import rest_framework before pytest re-adds the package root directory.
-        import scoped_rbac # NOQA
+        # import scoped_rbac before pytest re-adds the package root directory.
+        import scoped_rbac # noqa
 
         package_dir = os.path.join(os.getcwd(), "scoped_rbac")
         assert not scoped_rbac.__file__.startswith(package_dir)
 
     try:
-        import django # NOQA
+        import django # noqa
         django.setup()
     except AttributeError:
         pass
