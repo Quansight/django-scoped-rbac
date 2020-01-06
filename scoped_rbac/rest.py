@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from .models import Context, Role, RoleAssignment
@@ -7,6 +8,7 @@ from .serializers import (
     RoleSerializer,
     RoleAssignmentSerializer,
     UserSerializer,
+    ContentTypeSerializer
 )
 
 
@@ -70,3 +72,8 @@ class UserViewSet(AccessControlledModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+
+class ContentType(AccessControlledModelViewSet):
+    queryset = ContentType.objects.all()
+    serializer_class = ContentTypeSerializer
