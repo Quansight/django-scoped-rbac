@@ -3,7 +3,8 @@ from rest_framework import serializers
 from .models import Context, Role, RoleAssignment, ContentType
 
 
-class ContextSerializer(serializers.HyperlinkedModelSerializer):
+# Needs to be able to create a hyperlink to the related contenttype
+class ContextSerializer(serializers.ModelSerializer):
     class Meta:
         model = Context
         fields = "__all__"
