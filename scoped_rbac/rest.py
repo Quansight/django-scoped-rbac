@@ -1,4 +1,6 @@
 from django.contrib.auth.models import User
+from django.urls import reverse
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from .models import Context, Role, RoleAssignment
@@ -8,6 +10,10 @@ from .serializers import (
     RoleAssignmentSerializer,
     UserSerializer,
 )
+
+
+class DefaultPageNumberPagination(PageNumberPagination):
+    page_size = 100
 
 
 class AccessControlledAPIView(APIView):
@@ -32,7 +38,13 @@ class AccessControlledAPIView(APIView):
 
 
 class AccessControlledModelViewSet(AccessControlledAPIView, ModelViewSet):
-    pass
+
+    def get_success_headers(self, data):
+        try:
+            return {'Location': reverse(self.basename + "-detail",
+                args=[str(data['id'])])}
+        except (TypeError, KeyError):
+            return {}
 
 
 class ContextViewSet(AccessControlledModelViewSet):
@@ -42,6 +54,7 @@ class ContextViewSet(AccessControlledModelViewSet):
 
     queryset = Context.objects.all()
     serializer_class = ContextSerializer
+    pagination_class = DefaultPageNumberPagination
 
 
 class RoleViewSet(AccessControlledModelViewSet):
@@ -51,6 +64,7 @@ class RoleViewSet(AccessControlledModelViewSet):
 
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
+    pagination_class = DefaultPageNumberPagination
 
 
 class RoleAssignmentViewSet(AccessControlledModelViewSet):
@@ -60,6 +74,7 @@ class RoleAssignmentViewSet(AccessControlledModelViewSet):
 
     queryset = RoleAssignment.objects.all()
     serializer_class = RoleAssignmentSerializer
+    pagination_class = DefaultPageNumberPagination
 
 
 class UserViewSet(AccessControlledModelViewSet):
@@ -70,3 +85,4 @@ class UserViewSet(AccessControlledModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    pagination_class = DefaultPageNumberPagination

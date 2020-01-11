@@ -12,11 +12,13 @@ class ContextSerializer(serializers.HyperlinkedModelSerializer):
 class RoleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Role
+        fields = "__all__"
 
 
 class RoleAssignmentSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = RoleAssignment
+        fields = "__all__"
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
