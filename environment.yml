@@ -18,4 +18,5 @@ dependencies:
   - conda-merge
   - django-appconf
   - django_extensions
+  - safetydance_django
 name: scoped_rbac

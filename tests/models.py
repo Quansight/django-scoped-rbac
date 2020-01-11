@@ -1,8 +1,8 @@
 from django.db import models
-from scoped_rbac.models import RbacContext
+from scoped_rbac.models import IdentifiedByIRI, RbacContext
 
 
-class ScopedRbacModel(models.Model):
+class ScopedRbacTestModel(models.Model):
     """Mixin class for models used in testing."""
 
     class Meta:
@@ -10,5 +10,5 @@ class ScopedRbacModel(models.Model):
         abstract = True
 
 
-class ExampleRbacContext(ScopedRbacModel, RbacContext):
+class ExampleRbacContext(ScopedRbacTestModel, RbacContext):
     name = models.CharField(max_length=128)

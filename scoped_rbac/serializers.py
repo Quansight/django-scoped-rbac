@@ -6,6 +6,7 @@ from .models import Context, Role, RoleAssignment
 class ContextSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Context
+        fields = ("id", "object_id", "content_object")
 
 
 class RoleSerializer(serializers.HyperlinkedModelSerializer):

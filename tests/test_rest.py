@@ -1,9 +1,16 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from safetydance_django.test import *
+from safetydance_test import scripted_test, Given, When, Then, And
+import pytest
 
 
-class ContextTests(APITestCase):
-    def test_get_contexts(self):
-        response = self.client.get(reverse('context-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+@pytest.mark.django_db
+@scripted_test
+def test_get_contexts():
+    Given.http.get(reverse('context-list'))
+    Then.http.status_code_is(200)
+    And.http.response_json_is([])
+
+    
