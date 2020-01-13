@@ -61,6 +61,15 @@ def pytest_configure(config):
             'django.contrib.auth.hashers.MD5PasswordHasher',
             'django.contrib.auth.hashers.CryptPasswordHasher',
         ),
+        # TODO
+        REST_FRAMEWORK={
+            'DEFAULT_PERMISSION_CLASSES': [
+                'scoped_rbac.permissions.IsAuthorized',
+            ],
+            # 'DEFAULT_AUTHENTICATION_CLASSES': [
+                # 'rest_framework.authentication.BasicAuthentication',
+            # ],
+        },
     )
 
     try:

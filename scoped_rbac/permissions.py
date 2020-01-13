@@ -1,10 +1,15 @@
 from rest_framework import permissions
-from .models import RoleAssignment
-from .policy import ALLOWED, RecursivePolicyMap
+from .models import RbacContext, RoleAssignment
+from .policy import ALLOWED, NOT_ALLOWED, Permission, RecursivePolicyMap
+
+
+DEFAULT_CONTEXT = "__DEFAULT_CONTEXT__"
 
 
 def policy_for(request):
     # TODO figure out caching for this
+    if request.user is None:
+        return NOT_ALLOWED
     if request.user.is_superuser:
         return ALLOWED
     role_assignments = RoleAssignment.objects.filter(
@@ -34,12 +39,15 @@ class IsAuthorized(permissions.BasePermission):
         Requires that the object is `AccessControlled`.
         """
         policy = policy_for(request)
-        return policy.should_allow(
-            obj.rbac_context.id,
-            http_action_iri_for(request),
-            obj.resource_type.iri,
+        context_id = obj.rbac_context.id if not isinstance(obj, RbacContext) else obj.id
+        result = policy.should_allow(
+            Permission(http_action_iri_for(request), obj.resource_type.iri),
+            context_id, #TODO this must be a string in context namespace...
             obj,
         )
+        if result is False:
+            raise Exception("false has_object_permission")
+        return result
 
     def has_permission(self, request, view):
         """
@@ -47,9 +55,12 @@ class IsAuthorized(permissions.BasePermission):
         """
         policy = policy_for(request)
         resource = request.data if request.method in ("PUT", "POST") else None
-        return policy.should_allow(
+        result = policy.should_allow(
+            Permission(
+                http_action_iri_for(request), view.resource_type_iri_for(request)),
             view.context_id_for(request),
-            http_action_iri_for(request),
-            view.resource_type_iri_for(request),
             resource,
         )
+        if result is False:
+            raise Exception("false has__permission")
+        return result

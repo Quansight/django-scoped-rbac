@@ -4,6 +4,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from .models import Context, Role, RoleAssignment
+from .permissions import DEFAULT_CONTEXT
 from .serializers import (
     ContextSerializer,
     RoleSerializer,
@@ -16,28 +17,28 @@ class DefaultPageNumberPagination(PageNumberPagination):
     page_size = 100
 
 
-class AccessControlledAPIView(APIView):
+class AccessControlledAPIView:
     """
     This `APIView` interface is required for non-object based views in combination with
     the `IsAuthorized` permission class.
     """
 
-    def context_id_for(request):
+    def context_id_for(self, request):
         """
         Subclasses **MUST** override this method.
         """
 
-        raise "Not implemented"
+        raise NotImplementedError()
 
-    def resource_type_iri_for(request):
+    def resource_type_iri_for(self, request):
         """
         Subclasses **MUST** override this method.
         """
 
-        raise "Not implemented"
+        raise NotImplementedError()
 
 
-class AccessControlledModelViewSet(AccessControlledAPIView, ModelViewSet):
+class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
 
     def get_success_headers(self, data):
         try:
@@ -56,6 +57,19 @@ class ContextViewSet(AccessControlledModelViewSet):
     serializer_class = ContextSerializer
     pagination_class = DefaultPageNumberPagination
 
+    def context_id_for(self, request):
+        return DEFAULT_CONTEXT
+        # TODO Is this a collection or an item?
+        # if request.method = "POST":
+            # return DEFAULT_CONTEXT
+        # else:
+            # return item
+
+    def resource_type_iri_for(self, request):
+        # TODO is this the collection or an item?
+        # Also... need an IRI for collections...
+        return f"{Context.resource_type.iri}"
+
 
 class RoleViewSet(AccessControlledModelViewSet):
     """
@@ -66,6 +80,20 @@ class RoleViewSet(AccessControlledModelViewSet):
     serializer_class = RoleSerializer
     pagination_class = DefaultPageNumberPagination
 
+    def context_id_for(self, request):
+        return DEFAULT_CONTEXT
+        # TODO Is this a collection or an item?
+        # if request.method = "POST":
+            # return DEFAULT_CONTEXT
+        # else:
+            # return item
+
+    def resource_type_iri_for(self, request):
+        # TODO is this the collection or an item?
+        # Also... need an IRI for collections...
+        return f"{Role.resource_type.iri}"
+
+
 
 class RoleAssignmentViewSet(AccessControlledModelViewSet):
     """
@@ -75,6 +103,19 @@ class RoleAssignmentViewSet(AccessControlledModelViewSet):
     queryset = RoleAssignment.objects.all()
     serializer_class = RoleAssignmentSerializer
     pagination_class = DefaultPageNumberPagination
+
+    def context_id_for(self, request):
+        return DEFAULT_CONTEXT
+        # TODO Is this a collection or an item?
+        # if request.method = "POST":
+            # return DEFAULT_CONTEXT
+        # else:
+            # return item
+
+    def resource_type_iri_for(self, request):
+        # TODO is this the collection or an item?
+        # Also... need an IRI for collections...
+        return f"{RoleAssignment.resource_type.iri}"
 
 
 class UserViewSet(AccessControlledModelViewSet):

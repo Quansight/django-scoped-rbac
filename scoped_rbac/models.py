@@ -32,13 +32,18 @@ class Context(models.Model):
     class Meta:
         unique_together = ("content_type", "object_id")
 
+    resource_type = ResourceType(
+            "rbac.Context",
+            "Context",
+            "Generic representation of a Context in an scoped_rbac system.",
+            )
+
 
 def create_context_on_save(sender, instance, created, *args, **kwargs):
     if created:
         instance._rbac_context.create(**{"content_object": instance})
 
 
-# class RbacContext(models.Model, IdentifiedByIRI):
 class RbacContext(models.Model):
     """
     Model classes that constitute access control contexts should subclass this class.
@@ -49,7 +54,7 @@ class RbacContext(models.Model):
     _rbac_context = GenericRelation(Context)
 
     @property
-    def rbac_context(self):
+    def as_rbac_context(self):
         return self._rbac_context.get()
 
     @classmethod

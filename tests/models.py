@@ -1,5 +1,6 @@
 from django.db import models
-from scoped_rbac.models import IdentifiedByIRI, RbacContext
+from scoped_rbac.models import AccessControlledModel, IdentifiedByIRI, RbacContext
+from scoped_rbac.registry import ResourceType
 
 
 class ScopedRbacTestModel(models.Model):
@@ -10,5 +11,10 @@ class ScopedRbacTestModel(models.Model):
         abstract = True
 
 
-class ExampleRbacContext(ScopedRbacTestModel, RbacContext):
+class ExampleRbacContext(ScopedRbacTestModel, AccessControlledModel, RbacContext):
     name = models.CharField(max_length=128)
+    resource_type = ResourceType(
+            "rbac.ExampleRbacContext",
+            "ExampleRbacContext",
+            "An example context for testing and demonstration purposes.",
+            )
