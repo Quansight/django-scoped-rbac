@@ -4,6 +4,7 @@ channels:
 dependencies:
 - django=2.2
 - djangorestframework=3.11.0
+- black
 - factory_boy
 - flake8
 - pip

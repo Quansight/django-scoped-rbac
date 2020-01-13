@@ -13,6 +13,7 @@ class IdentifiedByIRI(object):
 
     Subclasses **MUST** define a `resource_type: ResourceType` property.
     """
+
     ...
 
 
@@ -33,10 +34,10 @@ class Context(models.Model):
         unique_together = ("content_type", "object_id")
 
     resource_type = ResourceType(
-            "rbac.Context",
-            "Context",
-            "Generic representation of a Context in an scoped_rbac system.",
-            )
+        "rbac.Context",
+        "Context",
+        "Generic representation of a Context in an scoped_rbac system.",
+    )
 
 
 def create_context_on_save(sender, instance, created, *args, **kwargs):

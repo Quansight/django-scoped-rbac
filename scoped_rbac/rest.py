@@ -39,11 +39,11 @@ class AccessControlledAPIView:
 
 
 class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
-
     def get_success_headers(self, data):
         try:
-            return {'Location': reverse(self.basename + "-detail",
-                args=[str(data['id'])])}
+            return {
+                "Location": reverse(self.basename + "-detail", args=[str(data["id"])])
+            }
         except (TypeError, KeyError):
             return {}
 
@@ -61,9 +61,9 @@ class ContextViewSet(AccessControlledModelViewSet):
         return DEFAULT_CONTEXT
         # TODO Is this a collection or an item?
         # if request.method = "POST":
-            # return DEFAULT_CONTEXT
+        # return DEFAULT_CONTEXT
         # else:
-            # return item
+        # return item
 
     def resource_type_iri_for(self, request):
         # TODO is this the collection or an item?
@@ -84,15 +84,14 @@ class RoleViewSet(AccessControlledModelViewSet):
         return DEFAULT_CONTEXT
         # TODO Is this a collection or an item?
         # if request.method = "POST":
-            # return DEFAULT_CONTEXT
+        # return DEFAULT_CONTEXT
         # else:
-            # return item
+        # return item
 
     def resource_type_iri_for(self, request):
         # TODO is this the collection or an item?
         # Also... need an IRI for collections...
         return f"{Role.resource_type.iri}"
-
 
 
 class RoleAssignmentViewSet(AccessControlledModelViewSet):
@@ -108,9 +107,9 @@ class RoleAssignmentViewSet(AccessControlledModelViewSet):
         return DEFAULT_CONTEXT
         # TODO Is this a collection or an item?
         # if request.method = "POST":
-            # return DEFAULT_CONTEXT
+        # return DEFAULT_CONTEXT
         # else:
-            # return item
+        # return item
 
     def resource_type_iri_for(self, request):
         # TODO is this the collection or an item?

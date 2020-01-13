@@ -42,7 +42,7 @@ class IsAuthorized(permissions.BasePermission):
         context_id = obj.rbac_context.id if not isinstance(obj, RbacContext) else obj.id
         result = policy.should_allow(
             Permission(http_action_iri_for(request), obj.resource_type.iri),
-            context_id, #TODO this must be a string in context namespace...
+            context_id,  # TODO this must be a string in context namespace...
             obj,
         )
         if result is False:
@@ -57,7 +57,8 @@ class IsAuthorized(permissions.BasePermission):
         resource = request.data if request.method in ("PUT", "POST") else None
         result = policy.should_allow(
             Permission(
-                http_action_iri_for(request), view.resource_type_iri_for(request)),
+                http_action_iri_for(request), view.resource_type_iri_for(request)
+            ),
             view.context_id_for(request),
             resource,
         )
