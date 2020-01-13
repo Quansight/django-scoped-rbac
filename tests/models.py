@@ -14,7 +14,7 @@ class ScopedRbacTestModel(models.Model):
 class ExampleRbacContext(ScopedRbacTestModel, AccessControlledModel, RbacContext):
     name = models.CharField(max_length=128)
     resource_type = ResourceType(
-            "rbac.ExampleRbacContext",
-            "ExampleRbacContext",
-            "An example context for testing and demonstration purposes.",
-            )
+        "rbac.ExampleRbacContext",
+        "ExampleRbacContext",
+        "An example context for testing and demonstration purposes.",
+    )

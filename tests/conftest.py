@@ -28,13 +28,13 @@ def pytest_configure(config):
         STATIC_URL="/static/",
         ROOT_URLCONF="tests.urls",
         TEMPLATE_LOADERS=(
-            'django.template.loaders.filesystem.Loader',
-            'django.template.loaders.app_directories.Loader',
+            "django.template.loaders.filesystem.Loader",
+            "django.template.loaders.app_directories.Loader",
         ),
         MIDDLEWARE=(
             "django.middleware.common.CommonMiddleware",
             "django.contrib.sessions.middleware.SessionMiddleware",
-            'django.middleware.csrf.CsrfViewMiddleware',
+            "django.middleware.csrf.CsrfViewMiddleware",
             "django.contrib.auth.middleware.AuthenticationMiddleware",
             "django.contrib.messages.middleware.MessageMiddleware",
         ),
@@ -44,30 +44,26 @@ def pytest_configure(config):
             "django.contrib.contenttypes",
             "django.contrib.sessions",
             "django.contrib.sites",
-            'django.contrib.messages',
+            "django.contrib.messages",
             "django.contrib.staticfiles",
-
             "rest_framework",
             "rest_framework.authtoken",
-
             "scoped_rbac",
             "tests",
         ),
         PASSWORD_HASHERS=(
-            'django.contrib.auth.hashers.SHA1PasswordHasher',
-            'django.contrib.auth.hashers.PBKDF2PasswordHasher',
-            'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
-            'django.contrib.auth.hashers.BCryptPasswordHasher',
-            'django.contrib.auth.hashers.MD5PasswordHasher',
-            'django.contrib.auth.hashers.CryptPasswordHasher',
+            "django.contrib.auth.hashers.SHA1PasswordHasher",
+            "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+            "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+            "django.contrib.auth.hashers.BCryptPasswordHasher",
+            "django.contrib.auth.hashers.MD5PasswordHasher",
+            "django.contrib.auth.hashers.CryptPasswordHasher",
         ),
         # TODO
         REST_FRAMEWORK={
-            'DEFAULT_PERMISSION_CLASSES': [
-                'scoped_rbac.permissions.IsAuthorized',
-            ],
+            "DEFAULT_PERMISSION_CLASSES": ["scoped_rbac.permissions.IsAuthorized",],
             # 'DEFAULT_AUTHENTICATION_CLASSES': [
-                # 'rest_framework.authentication.BasicAuthentication',
+            # 'rest_framework.authentication.BasicAuthentication',
             # ],
         },
     )
@@ -78,9 +74,7 @@ def pytest_configure(config):
     except ImportError:
         pass
     else:
-        settings.INSTALLED_APPS += (
-            'oauth_provider',
-        )
+        settings.INSTALLED_APPS += ("oauth_provider",)
 
     try:
         import provider  # noqa
@@ -88,8 +82,8 @@ def pytest_configure(config):
         pass
     else:
         settings.INSTALLED_APPS += (
-            'provider',
-            'provider.oauth2',
+            "provider",
+            "provider.oauth2",
         )
 
     # guardian is optional
@@ -100,24 +94,23 @@ def pytest_configure(config):
     else:
         settings.ANONYMOUS_USER_ID = -1
         settings.AUTHENTICATION_BACKENDS = (
-            'django.contrib.auth.backends.ModelBackend',
-            'guardian.backends.ObjectPermissionBackend',
+            "django.contrib.auth.backends.ModelBackend",
+            "guardian.backends.ObjectPermissionBackend",
         )
-        settings.INSTALLED_APPS += (
-            'guardian',
-        )
+        settings.INSTALLED_APPS += ("guardian",)
 
     if config.getoption("--no-pkgroot"):
         sys.path.pop(0)
 
         # import scoped_rbac before pytest re-adds the package root directory.
-        import scoped_rbac # noqa
+        import scoped_rbac  # noqa
 
         package_dir = os.path.join(os.getcwd(), "scoped_rbac")
         assert not scoped_rbac.__file__.startswith(package_dir)
 
     try:
-        import django # noqa
+        import django  # noqa
+
         django.setup()
     except AttributeError:
         pass

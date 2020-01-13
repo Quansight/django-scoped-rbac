@@ -16,9 +16,9 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
         return DEFAULT_CONTEXT
         # TODO Is this a collection or an item?
         # if request.method = "POST":
-            # return DEFAULT_CONTEXT
+        # return DEFAULT_CONTEXT
         # else:
-            # return item
+        # return item
 
     def resource_type_iri_for(self, request):
         # TODO is this the collection or an item?
@@ -28,5 +28,3 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
     def dispatch(self, *args, **kwargs):
         # import pdb; pdb.set_trace()
         return super().dispatch(*args, **kwargs)
-
-
