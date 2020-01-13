@@ -7,13 +7,13 @@ from .policy_json import json_loads_policy
 from .registry import register_access_controlled_model
 
 
-class IdentifiedByIRI(models.Model):
-    iri = models.CharField(primary_key=True, max_length=1024)
-    display_name = models.CharField(max_length=256)
-    description = models.TextField(null=True)
+class IdentifiedByIRI(object):
+    """
+    A model mixin that has an associated RDF IRI indicating its RDF type.
 
-    class Meta:
-        abstract = True
+    Subclasses **MUST** define a `resource_type: ResourceType` property.
+    """
+    ...
 
 
 class Context(models.Model):
@@ -32,6 +32,12 @@ class Context(models.Model):
     class Meta:
         unique_together = ("content_type", "object_id")
 
+    resource_type = ResourceType(
+            "rbac.Context",
+            "Context",
+            "Generic representation of a Context in an scoped_rbac system.",
+            )
+
 
 def create_context_on_save(sender, instance, created, *args, **kwargs):
     if created:
@@ -41,14 +47,14 @@ def create_context_on_save(sender, instance, created, *args, **kwargs):
 class RbacContext(models.Model):
     """
     Model classes that constitute access control contexts should subclass this class.
-    Classes that subclass this class will automatically create an associated Context
-    instance when created and save.
+    Classes that subclass this class will automatically create and save an associated
+    Context instance when created.
     """
 
     _rbac_context = GenericRelation(Context)
 
     @property
-    def rbac_context(self):
+    def as_rbac_context(self):
         return self._rbac_context.get()
 
     @classmethod
@@ -60,7 +66,8 @@ class RbacContext(models.Model):
         abstract = True
 
 
-class AccessControlled(models.Model):
+# class AccessControlledModel(models.Model, IdentifiedByIRI):
+class AccessControlledModel(models.Model):
     """
     Model classes that will be access controlled in a `rest_framework` view should
     subclass this class.
@@ -79,7 +86,7 @@ class AccessControlled(models.Model):
         register_access_controlled_model(cls)
 
 
-class Role(IdentifiedByIRI, AccessControlled, models.Model):
+class Role(AccessControlledModel):
     definition_json = models.TextField(null=False)
 
     # Required by AccessControlled
@@ -92,7 +99,7 @@ class Role(IdentifiedByIRI, AccessControlled, models.Model):
         return json_loads_policy(self.definition_json)
 
 
-class RoleAssignment(AccessControlled, models.Model):
+class RoleAssignment(AccessControlledModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     resource_type = ResourceType(

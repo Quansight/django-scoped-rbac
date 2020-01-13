@@ -2,19 +2,21 @@ channels:
 - conda-forge
 - defaults
 dependencies:
-- django=2.0.4
-- djangorestframework=3.9.0
+- django=2.2
+- djangorestframework=3.11.0
 - factory_boy
 - flake8
-- pip=9.0.3
-- pytest-django==3.4.4
-- pytest==3.6
+- pip
+- pytest-django
+- pytest
 - python-coreapi
-- python=3.6
+- python=3.7
 - requests
-- sqlite=3.25.3
+- sqlite
+- sphinx
 - pip:
   - conda-merge
-  - django-appconf==1.0.2
+  - django-appconf
   - django_extensions
+  - safetydance_django
 name: scoped_rbac

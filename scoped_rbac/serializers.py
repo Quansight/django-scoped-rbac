@@ -6,16 +6,19 @@ from .models import Context, Role, RoleAssignment
 class ContextSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Context
+        fields = ("id", "object_id", "content_object")
 
 
 class RoleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Role
+        fields = "__all__"
 
 
 class RoleAssignmentSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = RoleAssignment
+        fields = "__all__"
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
