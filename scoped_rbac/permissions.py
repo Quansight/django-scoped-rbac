@@ -45,8 +45,6 @@ class IsAuthorized(permissions.BasePermission):
             context_id,  # TODO this must be a string in context namespace...
             obj,
         )
-        if result is False:
-            raise Exception("false has_object_permission")
         return result
 
     def has_permission(self, request, view):
@@ -62,6 +60,4 @@ class IsAuthorized(permissions.BasePermission):
             view.context_id_for(request),
             resource,
         )
-        if result is False:
-            raise Exception("false has__permission")
         return result
