@@ -14,17 +14,7 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
 
     def context_id_for(self, request):
         return DEFAULT_CONTEXT
-        # TODO Is this a collection or an item?
-        # if request.method = "POST":
-        # return DEFAULT_CONTEXT
-        # else:
-        # return item
 
-    def resource_type_iri_for(self, request):
-        # TODO is this the collection or an item?
-        # Also... need an IRI for collections...
-        return f"{ExampleRbacContext.resource_type.iri}"
-
-    def dispatch(self, *args, **kwargs):
-        # import pdb; pdb.set_trace()
-        return super().dispatch(*args, **kwargs)
+    @property
+    def detail_iri(self):
+        return ExampleRbacContext.resource_type.iri

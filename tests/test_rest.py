@@ -7,11 +7,14 @@ from rest_framework.test import APITestCase
 from safetydance_django.test import *
 from safetydance_django.steps import http_client, http_response
 from safetydance_test import scripted_test, Given, When, Then, And
+from scoped_rbac.models import Context, Role, RoleAssignment
+from tests.models import ExampleRbacContext
+import json
 import pytest
 
 
 @dataclass
-class TestUser:
+class UserData:
     username: str
     email: str
     password: str
@@ -28,7 +31,25 @@ def create_test_user(superuser=False):
     else:
         user = User.objects.create_superuser(name, email, password,)
     user.save()
-    return TestUser(name, email, password, user)
+    return UserData(name, email, password, user)
+
+
+def create_role(json_policy_dict: dict, context: Context):
+    role = Role.objects.create(definition_json=json.dumps(json_policy_dict),)
+    if context is not None:
+        role.rbac_context = context
+    role.save()
+    return role
+
+
+def create_user_with_roles(role_context_pairs):
+    user = create_test_user()
+    for role, context in role_context_pairs:
+        role_assignment = RoleAssignment.objects.create(user=user.instance, role=role,)
+        if context is not None:
+            role_assignment.rbac_context = context
+        role_assignment.save()
+    return user
 
 
 @pytest.fixture()
@@ -42,10 +63,28 @@ def no_roles_user(transactional_db):
 
 
 @pytest.fixture()
-def testing_users(transactional_db, superuser, no_roles_user):
+def roles_for_testing(transactional_db):
     return {
-        "superuser": superuser,
-        "no_roles_user": no_roles_user,
+        "context_get_list": create_role(
+            {"http.get": [Context.resource_type.iri_as_collection,]}, None
+        ),
+        "example_rbac_context_get_list": create_role(
+            {"http.get": [ExampleRbacContext.resource_type.iri_as_collection,]}, None
+        ),
+    }
+
+
+@pytest.fixture()
+def testing_users(transactional_db, roles_for_testing):
+    return {
+        "superuser": create_test_user(superuser=True),
+        "no_roles_user": create_test_user(),
+        "user_context_get_list": create_user_with_roles(
+            [(roles_for_testing["context_get_list"], None),]
+        ),
+        "user_example_rbac_context_get_list": create_user_with_roles(
+            [(roles_for_testing["example_rbac_context_get_list"], None),]
+        ),
     }
 
 
@@ -62,7 +101,11 @@ def test_get_contexts(superuser):
 
 @pytest.mark.parametrize(
     "username, get_listing_allowed, post_allowed, get_detail_allowed",
-    (("superuser", True, True, True), ("no_roles_user", False, False, False),),
+    (
+        ("superuser", True, True, True),
+        ("no_roles_user", False, False, False),
+        ("user_example_rbac_context_get_list", True, False, False),
+    ),
 )
 @pytest.mark.django_db
 @scripted_test

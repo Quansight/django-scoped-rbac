@@ -31,11 +31,20 @@ class AccessControlledAPIView:
         raise NotImplementedError()
 
     def resource_type_iri_for(self, request):
+        if request.resolver_match.url_name.endswith("-list"):
+            return self.collection_iri
+        return self.detail_iri
+
+    @property
+    def detail_iri(self):
         """
         Subclasses **MUST** override this method.
         """
-
         raise NotImplementedError()
+
+    @property
+    def collection_iri(self):
+        return f"collection<{self.detail_iri}>"
 
 
 class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
@@ -59,16 +68,10 @@ class ContextViewSet(AccessControlledModelViewSet):
 
     def context_id_for(self, request):
         return DEFAULT_CONTEXT
-        # TODO Is this a collection or an item?
-        # if request.method = "POST":
-        # return DEFAULT_CONTEXT
-        # else:
-        # return item
 
-    def resource_type_iri_for(self, request):
-        # TODO is this the collection or an item?
-        # Also... need an IRI for collections...
-        return f"{Context.resource_type.iri}"
+    @property
+    def detail_iri(self):
+        return Context.resource_type.iri
 
 
 class RoleViewSet(AccessControlledModelViewSet):
@@ -82,16 +85,10 @@ class RoleViewSet(AccessControlledModelViewSet):
 
     def context_id_for(self, request):
         return DEFAULT_CONTEXT
-        # TODO Is this a collection or an item?
-        # if request.method = "POST":
-        # return DEFAULT_CONTEXT
-        # else:
-        # return item
 
-    def resource_type_iri_for(self, request):
-        # TODO is this the collection or an item?
-        # Also... need an IRI for collections...
-        return f"{Role.resource_type.iri}"
+    @property
+    def detail_iri(self):
+        return Role.resource_type.iri
 
 
 class RoleAssignmentViewSet(AccessControlledModelViewSet):
@@ -105,16 +102,10 @@ class RoleAssignmentViewSet(AccessControlledModelViewSet):
 
     def context_id_for(self, request):
         return DEFAULT_CONTEXT
-        # TODO Is this a collection or an item?
-        # if request.method = "POST":
-        # return DEFAULT_CONTEXT
-        # else:
-        # return item
 
-    def resource_type_iri_for(self, request):
-        # TODO is this the collection or an item?
-        # Also... need an IRI for collections...
-        return f"{RoleAssignment.resource_type.iri}"
+    @property
+    def detail_iri(self):
+        return RoleAssignment.resource_type.iri
 
 
 class UserViewSet(AccessControlledModelViewSet):

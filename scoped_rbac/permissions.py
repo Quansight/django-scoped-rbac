@@ -3,7 +3,7 @@ from .models import RbacContext, RoleAssignment
 from .policy import ALLOWED, NOT_ALLOWED, Permission, RecursivePolicyMap
 
 
-DEFAULT_CONTEXT = "__DEFAULT_CONTEXT__"
+DEFAULT_CONTEXT = None
 
 
 def policy_for(request):
@@ -21,12 +21,12 @@ def policy_for(request):
         role = role_assignment.role
         if role not in policy_by_role:
             policy_by_role[role] = role.as_policy
-        total_policy.add(policy_by_role[role], role_assignment.context.id)
+        total_policy.add(policy_by_role[role], role_assignment.rbac_context_id)
     return total_policy
 
 
 def http_action_iri_for(request):
-    return f"http.{request.method}"
+    return f"http.{request.method.lower()}"
 
 
 class IsAuthorized(permissions.BasePermission):

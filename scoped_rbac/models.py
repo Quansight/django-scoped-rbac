@@ -67,7 +67,6 @@ class RbacContext(models.Model):
         abstract = True
 
 
-# class AccessControlledModel(models.Model, IdentifiedByIRI):
 class AccessControlledModel(models.Model):
     """
     Model classes that will be access controlled in a `rest_framework` view should
@@ -76,10 +75,10 @@ class AccessControlledModel(models.Model):
     Subclasses **MUST** define a `resource_type: ResourceType` property.
     """
 
-    rbac_context = models.ForeignKey(Context, null=True, on_delete=models.SET_NULL)
-
     class Meta:
         abstract = True
+
+    rbac_context = models.ForeignKey(Context, null=True, on_delete=models.SET_NULL)
 
     @classmethod
     def __init_subclass__(cls, **kwargs):

@@ -1,9 +1,20 @@
 from collections import namedtuple
+from dataclasses import dataclass
 from typing import List
 
 
-ResourceType = namedtuple("ResourceType", "iri display_name description")
 Action = namedtuple("Action", "iri display_name, description")
+
+
+@dataclass
+class ResourceType:
+    iri: str
+    display_name: str
+    description: str
+
+    @property
+    def iri_as_collection(self):
+        return f"collection<{self.iri}>"
 
 
 class RbacRegistry:
