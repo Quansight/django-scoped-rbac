@@ -124,7 +124,7 @@ class RecursivePolicyMap(Policy):
         return self
 
     def recursive_sum_with(self, other_policy):
-        for k, v in other_policy:
+        for k, v in other_policy.policies.items():
             current_policy = self.policies.get(k, ZeroPolicy())
             self.policies[k] = current_policy.sum_with(v)
 

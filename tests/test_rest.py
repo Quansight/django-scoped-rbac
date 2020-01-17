@@ -66,10 +66,21 @@ def no_roles_user(transactional_db):
 def roles_for_testing(transactional_db):
     return {
         "context_get_list": create_role(
-            {"http.get": [Context.resource_type.iri_as_collection,]}, None
+            {"http.get": [Context.resource_type.iri_as_collection,],}, None
         ),
         "example_rbac_context_get_list": create_role(
-            {"http.get": [ExampleRbacContext.resource_type.iri_as_collection,]}, None
+            {"http.get": [ExampleRbacContext.resource_type.iri_as_collection,],}, None
+        ),
+        "example_rbac_context_get_detail": create_role(
+            {"http.get": [ExampleRbacContext.resource_type.iri,],}, None
+        ),
+        "example_rbac_context_post_put_delete": create_role(
+            {
+                "http.post": [ExampleRbacContext.resource_type.iri,],
+                "http.put": [ExampleRbacContext.resource_type.iri,],
+                "http.delete": [ExampleRbacContext.resource_type.iri,],
+            },
+            None,
         ),
     }
 
@@ -84,6 +95,13 @@ def testing_users(transactional_db, roles_for_testing):
         ),
         "user_example_rbac_context_get_list": create_user_with_roles(
             [(roles_for_testing["example_rbac_context_get_list"], None),]
+        ),
+        "user_example_rbac_context_all": create_user_with_roles(
+            [
+                (roles_for_testing["example_rbac_context_get_list"], None),
+                (roles_for_testing["example_rbac_context_get_detail"], None),
+                (roles_for_testing["example_rbac_context_post_put_delete"], None),
+            ]
         ),
     }
 
@@ -105,6 +123,7 @@ def test_get_contexts(superuser):
         ("superuser", True, True, True),
         ("no_roles_user", False, False, False),
         ("user_example_rbac_context_get_list", True, False, False),
+        ("user_example_rbac_context_all", True, True, True),
     ),
 )
 @pytest.mark.django_db

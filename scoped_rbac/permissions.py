@@ -39,7 +39,7 @@ class IsAuthorized(permissions.BasePermission):
         Requires that the object is `AccessControlled`.
         """
         policy = policy_for(request)
-        context_id = obj.rbac_context.id if not isinstance(obj, RbacContext) else obj.id
+        context_id = obj.rbac_context_id
         result = policy.should_allow(
             Permission(http_action_iri_for(request), obj.resource_type.iri),
             context_id,  # TODO this must be a string in context namespace...

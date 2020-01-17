@@ -31,7 +31,10 @@ class AccessControlledAPIView:
         raise NotImplementedError()
 
     def resource_type_iri_for(self, request):
-        if request.resolver_match.url_name.endswith("-list"):
+        if (
+            request.resolver_match.url_name.endswith("-list")
+            and request.method.lower() != "post"
+        ):
             return self.collection_iri
         return self.detail_iri
 
