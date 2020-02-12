@@ -10,12 +10,9 @@ class EnvelopeCollectionSerializer(serializers.ListSerializer):
             "etag": self.child.etag_for(item),
             "last_modified": self.child.last_modified_for(item),
             "content": self.child.to_representation(item),
-            }
+        }
 
     def to_representation(self, data):
-        iterable = \
-            data.all() if isinstance(data, (Manager, QuerySet)) else data
+        iterable = data.all() if isinstance(data, (Manager, QuerySet)) else data
         ret = [self.envelope_for(item) for item in iterable]
         return ret
-
-

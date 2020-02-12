@@ -2,7 +2,7 @@
 import os
 import sys
 
-SETTINGS_FILE = os.environ.get("SETTINGS_FILE", 'dev_settings')
+SETTINGS_FILE = os.environ.get("SETTINGS_FILE", "dev_settings")
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "main.%s" % SETTINGS_FILE)

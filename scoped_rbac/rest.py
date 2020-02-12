@@ -39,7 +39,6 @@ class AccessControlledAPIView:
 
 
 class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
-
     def get_success_headers(self, data):
         try:
             return {

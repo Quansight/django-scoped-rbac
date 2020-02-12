@@ -44,10 +44,11 @@ class ExampleRbacContextSerializer(serializers.HyperlinkedModelSerializer):
     def collection_etag(cls, request, *args, **kwargs):
         try:
             return hashlib.md5(
-                    f"examplerbaccontext-list {ExampleRbacContext.objects.latest().updated_at}"\
-                            .encode("utf-8")).hexdigest()
+                f"examplerbaccontext-list {ExampleRbacContext.objects.latest().updated_at}".encode(
+                    "utf-8"
+                )
+            ).hexdigest()
         except ExampleRbacContext.DoesNotExist:
             return hashlib.md5(
-                    f"examplerbaccontext-list {datetime.now()}".encode("utf-8"))\
-                            .hexdigest()
- 
+                f"examplerbaccontext-list {datetime.now()}".encode("utf-8")
+            ).hexdigest()

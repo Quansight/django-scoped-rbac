@@ -13,10 +13,11 @@ from .serializers import ExampleRbacContextSerializer
 
 def calculate_collection_last_modified(request, *args, **kwargs):
     from datetime import datetime
+
     return datetime.now()
 
 
-def calculate_last_modified(request, *args, **kwargs): #, pk):
+def calculate_last_modified(request, *args, **kwargs):  # , pk):
     return ExampleRbacContext.last_modified_for(pk)
 
 
@@ -46,7 +47,8 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
 
     @condition(
         last_modified_func=ExampleRbacContextSerializer.collection_last_modified,
-        etag_func=ExampleRbacContextSerializer.collection_etag)
+        etag_func=ExampleRbacContextSerializer.collection_etag,
+    )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
@@ -58,23 +60,27 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
         headers["etag"] = serializer.etag()
         headers["last_modified"] = serializer.last_modified()
         return Response(
-                serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
     @condition(
         last_modified_func=ExampleRbacContextSerializer.last_modified_for,
-        etag_func=ExampleRbacContextSerializer.etag_for)
+        etag_func=ExampleRbacContextSerializer.etag_for,
+    )
     def retrieve(self, request, *args, **kwargs):
         ret = super().retrieve(request, *args, **kwargs)
         return ret
 
     @condition(
         last_modified_func=ExampleRbacContextSerializer.last_modified_for,
-        etag_func=ExampleRbacContextSerializer.etag_for)
+        etag_func=ExampleRbacContextSerializer.etag_for,
+    )
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
 
     @condition(
         last_modified_func=ExampleRbacContextSerializer.last_modified_for,
-        etag_func=ExampleRbacContextSerializer.etag_for)
+        etag_func=ExampleRbacContextSerializer.etag_for,
+    )
     def destroy(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)
