@@ -43,18 +43,21 @@ def test_get_contexts(superuser):
 @pytest.mark.django_db
 @scripted_test
 def test_create_contexts(superuser):
-    # Given.http.login(username=superuser.username, password=superuser.password)
     Given.http.force_authenticate(user=superuser.instance)
-    # And.http.get(reverse('rest_framework'))
     When.http.get(reverse("examplerbaccontext-list"))
     Then.http.status_code_is(200)
     And.http.response_json_is(
         {"count": 0, "next": None, "previous": None, "results": [],}
     )
 
-    # And.http.get(reverse('rest_framework'))
     When.http.post(reverse("examplerbaccontext-list"), {"name": "foo"}, format="json")
     Then.http.status_code_is(201)
     When.http.get_created()
     Then.http.status_code_is(200)
     And.http.response_json_is({"name": "foo"})
+
+    #FIXME delete after testing, add envelope testing
+    # When.http.get(reverse("examplerbaccontext-list"))
+    # print(http_response.json())
+    # print(http_response._headers)
+    # raise Exception("just want the trace")
