@@ -27,7 +27,7 @@ class EnvelopeItemSerializer:
 
 
 class EnvelopeCollectionSerializer(serializers.ListSerializer):
-    """Serliaize items in a list wrapped in an evenlope containing caching headers and
+    """Serialize items in a list wrapped in an envelope containing caching headers and
     other properties.
     """
     def envelope_for(self, item):
