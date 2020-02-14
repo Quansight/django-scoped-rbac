@@ -1,12 +1,16 @@
 from datetime import datetime
-from drf_envelopes.envelope_collection import EnvelopeCollectionSerializer
+from drf_envelopes.serializers import (
+        EnvelopeCollectionSerializer,
+        EnvelopeItemSerializer,
+        )
 from rest_framework import serializers
 from rest_framework.reverse import reverse_lazy
 from .models import ExampleRbacContext
 import hashlib
 
 
-class ExampleRbacContextSerializer(serializers.HyperlinkedModelSerializer):
+class ExampleRbacContextSerializer(
+        EnvelopeItemSerializer, serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ExampleRbacContext
         fields = ("id", "name")
@@ -14,12 +18,6 @@ class ExampleRbacContextSerializer(serializers.HyperlinkedModelSerializer):
 
     def absolute_url_for(self, item):
         return reverse_lazy("examplerbaccontext-detail", pk=item.pk)
-
-    def etag(self):
-        return self.etag_for(self.instance)
-
-    def last_modified(self):
-        return self.last_modified_for(self.instance)
 
     @classmethod
     def etag_for(cls, item=None, *arg, pk=None, **kwarg):

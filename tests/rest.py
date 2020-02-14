@@ -11,20 +11,6 @@ from .models import ExampleRbacContext
 from .serializers import ExampleRbacContextSerializer
 
 
-def calculate_collection_last_modified(request, *args, **kwargs):
-    from datetime import datetime
-
-    return datetime.now()
-
-
-def calculate_last_modified(request, *args, **kwargs):  # , pk):
-    return ExampleRbacContext.last_modified_for(pk)
-
-
-def calculate_etag(request, *args, **kwargs):
-    return '"foo"'
-
-
 class ExampleRbacContextViewSet(AccessControlledModelViewSet):
 
     queryset = ExampleRbacContext.objects.all()
@@ -58,7 +44,9 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         headers["etag"] = serializer.etag()
-        headers["last_modified"] = serializer.last_modified()
+        headers["last-modified"] = serializer.last_modified()
+        if serializer.link_header_content():
+            headers["link"] = serializer.link_header_content()
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
@@ -69,6 +57,9 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
     )
     def retrieve(self, request, *args, **kwargs):
         ret = super().retrieve(request, *args, **kwargs)
+        serializer = self.get_serializer()
+        if serializer.link_header_content():
+            ret["link"] = serializer.link_header_content(**kwargs)
         return ret
 
     @condition(
@@ -76,7 +67,10 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
         etag_func=ExampleRbacContextSerializer.etag_for,
     )
     def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
+        ret = super().update(request, *args, **kwargs)
+        headers["etag"] = serializer.etag()
+        headers["last-modified"] = serializer.last_modified()
+        return ret
 
     @condition(
         last_modified_func=ExampleRbacContextSerializer.last_modified_for,
