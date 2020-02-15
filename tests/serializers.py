@@ -1,5 +1,5 @@
 from datetime import datetime
-from drf_envelopes.serializers import (
+from drf_scrud.serializers import (
         EnvelopeCollectionSerializer,
         EnvelopeItemSerializer,
         )

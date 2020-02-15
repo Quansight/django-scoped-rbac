@@ -4,7 +4,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_condition import last_modified, condition
 from rest_framework_extensions.etag.decorators import etag
-from rest_framework_extensions.etag.mixins import ETAGMixin
 from scoped_rbac.rest import AccessControlledModelViewSet, DefaultPageNumberPagination
 from scoped_rbac.permissions import DEFAULT_CONTEXT, IsAuthorized
 from .models import ExampleRbacContext

@@ -70,3 +70,4 @@ wcwidth==0.1.8
 webencodings==0.5.1
 xonsh==0.9.13
 zipp==2.1.0
+drf_jsonschema
