@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from .models import Context, Role, RoleAssignment
+from .models import Context, Role, RoleAssignment, UserResourceType
 from .permissions import DEFAULT_CONTEXT
 from .serializers import (
     ContextSerializer,
@@ -23,19 +23,35 @@ class AccessControlledAPIView:
     the `IsAuthorized` permission class.
     """
 
-    def context_id_for(self, request):
-        """
-        Subclasses **MUST** override this method.
-        """
-
-        raise NotImplementedError()
-
     def resource_type_iri_for(self, request):
         """
+        Return the resource_type_iri for the resource type indicated by this request.
+        """
+
+        if self.action == "list":
+            return self.list_type_iri
+        else:
+            return self.resource_type_iri
+
+
+    @property
+    def resource_type_iri(self):
+        """
         Subclasses **MUST** override this method.
+        Return the resource_type_iri for the base resource supported by this view.
         """
 
         raise NotImplementedError()
+
+
+    @property
+    def list_type_iri(self):
+        """
+        Return the list resource_type_iri for this view.
+        """
+
+        return f"{self.resource_type_iri}/list"
+
 
 
 class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
@@ -47,6 +63,26 @@ class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
         except (TypeError, KeyError):
             return {}
 
+    def list(self, request, *args, **kwargs):
+        #TODO restrict listing to authorized contexts
+        return super().list(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        #TODO authorize
+        return super().create(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        #TODO authorize
+        return super().retrieve(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        #TODO authorize
+        return super().update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        #TODO authorize
+        return super().delete(request, *args, **kwargs)
+
 
 class ContextViewSet(AccessControlledModelViewSet):
     """
@@ -57,18 +93,9 @@ class ContextViewSet(AccessControlledModelViewSet):
     serializer_class = ContextSerializer
     pagination_class = DefaultPageNumberPagination
 
-    def context_id_for(self, request):
-        return DEFAULT_CONTEXT
-        # TODO Is this a collection or an item?
-        # if request.method = "POST":
-        # return DEFAULT_CONTEXT
-        # else:
-        # return item
-
-    def resource_type_iri_for(self, request):
-        # TODO is this the collection or an item?
-        # Also... need an IRI for collections...
-        return f"{Context.resource_type.iri}"
+    @property
+    def resource_type_iri(self):
+        return Context.resource_type.iri
 
 
 class RoleViewSet(AccessControlledModelViewSet):
@@ -80,18 +107,9 @@ class RoleViewSet(AccessControlledModelViewSet):
     serializer_class = RoleSerializer
     pagination_class = DefaultPageNumberPagination
 
-    def context_id_for(self, request):
-        return DEFAULT_CONTEXT
-        # TODO Is this a collection or an item?
-        # if request.method = "POST":
-        # return DEFAULT_CONTEXT
-        # else:
-        # return item
-
-    def resource_type_iri_for(self, request):
-        # TODO is this the collection or an item?
-        # Also... need an IRI for collections...
-        return f"{Role.resource_type.iri}"
+    @property
+    def resource_type_iri(self):
+        return Role.resource_type.iri
 
 
 class RoleAssignmentViewSet(AccessControlledModelViewSet):
@@ -103,18 +121,9 @@ class RoleAssignmentViewSet(AccessControlledModelViewSet):
     serializer_class = RoleAssignmentSerializer
     pagination_class = DefaultPageNumberPagination
 
-    def context_id_for(self, request):
-        return DEFAULT_CONTEXT
-        # TODO Is this a collection or an item?
-        # if request.method = "POST":
-        # return DEFAULT_CONTEXT
-        # else:
-        # return item
-
-    def resource_type_iri_for(self, request):
-        # TODO is this the collection or an item?
-        # Also... need an IRI for collections...
-        return f"{RoleAssignment.resource_type.iri}"
+    @property
+    def resource_type_iri(self):
+        return RoleAssignment.resource_type.iri
 
 
 class UserViewSet(AccessControlledModelViewSet):
@@ -126,3 +135,7 @@ class UserViewSet(AccessControlledModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     pagination_class = DefaultPageNumberPagination
+
+    @property
+    def resource_type_iri(self):
+        return UserResourceType.iri

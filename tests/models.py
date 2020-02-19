@@ -18,9 +18,15 @@ class ExampleRbacContext(ScopedRbacTestModel, AccessControlledModel, RbacContext
     name = models.CharField(max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    parent_context = models.ForeignKey('self', null=True, on_delete=models.CASCADE)
+
 
     resource_type = ResourceType(
         "rbac.ExampleRbacContext",
         "ExampleRbacContext",
         "An example context for testing and demonstration purposes.",
     )
+
+    def rbac_context(self):
+        return self.parent_context.get() or self
+

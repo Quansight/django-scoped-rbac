@@ -25,7 +25,7 @@ SECRET_KEY = "0xk&yz(-gdaunjt$y=*spg!mm26r4h6xjeqwf7zywj#r8gz5@a"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_extensions",
+    "rest_framework",
+    "rest_framework.authtoken",
     "scoped_rbac",
 ]
 
@@ -113,3 +116,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = "/static/"
+
+
+REST_FRAMEWORK={
+    "DEFAULT_PERMISSION_CLASSES": ["scoped_rbac.permissions.IsAuthorized",],
+}
+

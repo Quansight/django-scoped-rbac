@@ -1,9 +1,20 @@
 from collections import namedtuple
+from dataclasses import dataclass
 from typing import List
 
 
-ResourceType = namedtuple("ResourceType", "iri display_name description")
 Action = namedtuple("Action", "iri display_name, description")
+
+
+@dataclass
+class ResourceType:
+    iri: str
+    display_name: str
+    description: str
+
+    @property
+    def list_iri(self) -> str:
+        return f"{self.iri}/list"
 
 
 class RbacRegistry:
@@ -18,12 +29,13 @@ class RbacRegistry:
         if not cls._processed_model_classes:
             cls._processed_model_classes = True
             for model_cls in cls._ACCESS_CONTROLLED_MODEL_CLASSES:
-                if not hasattr(model_cls, "resource_type"):
-                    raise Exception(
-                        "Subclasses of AccessControlled **MUST** have a `resource_type: "
-                        f"ResourceType` property. {model_cls}"
-                    )
-                cls.CACHED_RESOURCE_TYPES.append(model_cls.resource_type)
+                if not model_cls._meta.abstract:
+                    if not hasattr(model_cls, "resource_type"):
+                        raise Exception(
+                            "Subclasses of AccessControlled **MUST** have a "
+                            f"`resource_type: ResourceType` property. {model_cls}"
+                        )
+                    cls.CACHED_RESOURCE_TYPES.append(model_cls.resource_type)
         return cls.CACHED_RESOURCE_TYPES
 
 

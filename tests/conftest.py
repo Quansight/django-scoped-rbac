@@ -61,7 +61,10 @@ def pytest_configure(config):
         ),
         # TODO
         REST_FRAMEWORK={
-            "DEFAULT_PERMISSION_CLASSES": ["scoped_rbac.permissions.IsAuthorized",],
+            "DEFAULT_PERMISSION_CLASSES": [
+                "scoped_rbac.permissions.IsAuthorized",
+                "rest_framework.permissions.IsAdminUser",
+            ],
             # 'DEFAULT_AUTHENTICATION_CLASSES': [
             # 'rest_framework.authentication.BasicAuthentication',
             # ],
