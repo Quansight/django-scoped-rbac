@@ -5,15 +5,17 @@ from rest_framework.response import Response
 from rest_framework_condition import last_modified, condition
 from rest_framework_extensions.etag.decorators import etag
 from scoped_rbac.rest import AccessControlledModelViewSet, DefaultPageNumberPagination
-from scoped_rbac.permissions import DEFAULT_CONTEXT, IsAuthorized
-from .models import ExampleRbacContext
-from .serializers import ExampleRbacContextSerializer
+from scoped_rbac.permissions import IsAuthorized
+from scoped_rbac.rbac_contexts import DEFAULT_CONTEXT
+from .models import ExampleAccessControlledModel
+from .serializers import ExampleAccessControlledModelSerializer
+import logging
 
 
-class ExampleRbacContextViewSet(AccessControlledModelViewSet):
+class ExampleAccessControlledModelViewSet(AccessControlledModelViewSet):
 
-    queryset = ExampleRbacContext.objects.all()
-    serializer_class = ExampleRbacContextSerializer
+    queryset = ExampleAccessControlledModel.objects.all()
+    serializer_class = ExampleAccessControlledModelSerializer
     pagination_class = DefaultPageNumberPagination
     permission_classes = [IsAuthorized]
 
@@ -28,11 +30,11 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
     def resource_type_iri_for(self, request):
         # TODO is this the collection or an item?
         # Also... need an IRI for collections...
-        return f"{ExampleRbacContext.resource_type.iri}"
+        return f"{ExampleAccessControlledModel.resource_type.iri}"
 
     @condition(
-        last_modified_func=ExampleRbacContextSerializer.collection_last_modified,
-        etag_func=ExampleRbacContextSerializer.collection_etag,
+        last_modified_func=ExampleAccessControlledModelSerializer.collection_last_modified,
+        etag_func=ExampleAccessControlledModelSerializer.collection_etag,
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
@@ -41,7 +43,8 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
+        headers = self.get_success_headers(serializer.instance)
+        logging.debug(headers)
         headers["etag"] = serializer.etag()
         headers["last-modified"] = serializer.last_modified()
         if serializer.link_header_content():
@@ -51,8 +54,8 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
         )
 
     @condition(
-        last_modified_func=ExampleRbacContextSerializer.last_modified_for,
-        etag_func=ExampleRbacContextSerializer.etag_for,
+        last_modified_func=ExampleAccessControlledModelSerializer.last_modified_for,
+        etag_func=ExampleAccessControlledModelSerializer.etag_for,
     )
     def retrieve(self, request, *args, **kwargs):
         ret = super().retrieve(request, *args, **kwargs)
@@ -62,8 +65,8 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
         return ret
 
     @condition(
-        last_modified_func=ExampleRbacContextSerializer.last_modified_for,
-        etag_func=ExampleRbacContextSerializer.etag_for,
+        last_modified_func=ExampleAccessControlledModelSerializer.last_modified_for,
+        etag_func=ExampleAccessControlledModelSerializer.etag_for,
     )
     def update(self, request, *args, **kwargs):
         ret = super().update(request, *args, **kwargs)
@@ -72,8 +75,8 @@ class ExampleRbacContextViewSet(AccessControlledModelViewSet):
         return ret
 
     @condition(
-        last_modified_func=ExampleRbacContextSerializer.last_modified_for,
-        etag_func=ExampleRbacContextSerializer.etag_for,
+        last_modified_func=ExampleAccessControlledModelSerializer.last_modified_for,
+        etag_func=ExampleAccessControlledModelSerializer.etag_for,
     )
     def destroy(self, request, *args, **kwargs):
         return super().delete(request, *args, **kwargs)

@@ -1,12 +1,13 @@
 from django.contrib.auth.models import User
 from django.urls import reverse
+from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from .models import Context, Role, RoleAssignment, UserResourceType
+from .models import Role, RoleAssignment, UserResourceType
 from .permissions import DEFAULT_CONTEXT
 from .serializers import (
-    ContextSerializer,
     RoleSerializer,
     RoleAssignmentSerializer,
     UserSerializer,
@@ -53,12 +54,11 @@ class AccessControlledAPIView:
         return f"{self.resource_type_iri}/list"
 
 
-
 class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
-    def get_success_headers(self, data):
+    def get_success_headers(self, instance):
         try:
             return {
-                "Location": reverse(self.basename + "-detail", args=[str(data["id"])])
+                "Location": reverse(self.basename + "-detail", args=[instance.id])
             }
         except (TypeError, KeyError):
             return {}
@@ -68,8 +68,17 @@ class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-        #TODO authorize
-        return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.instance)
+        # headers["etag"] = serializer.etag()
+        # headers["last-modified"] = serializer.last_modified()
+        # if serializer.link_header_content():
+            # headers["link"] = serializer.link_header_content()
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
     def retrieve(self, request, *args, **kwargs):
         #TODO authorize
@@ -82,20 +91,6 @@ class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
     def delete(self, request, *args, **kwargs):
         #TODO authorize
         return super().delete(request, *args, **kwargs)
-
-
-class ContextViewSet(AccessControlledModelViewSet):
-    """
-    TODO restrict queryset to authorized contexts for user
-    """
-
-    queryset = Context.objects.all()
-    serializer_class = ContextSerializer
-    pagination_class = DefaultPageNumberPagination
-
-    @property
-    def resource_type_iri(self):
-        return Context.resource_type.iri
 
 
 class RoleViewSet(AccessControlledModelViewSet):

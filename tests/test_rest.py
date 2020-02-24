@@ -62,33 +62,26 @@ def not_authorized_user(transactional_db):
 
 @pytest.mark.django_db
 @scripted_test
-def test_get_contexts(superuser):
-    Given.http.login(username=superuser.username, password=superuser.password)
-    When.http.get(reverse("context-list"))
-    Then.http.status_code_is(200)
-    And.http.response_json_is(
-        {"count": 0, "next": None, "previous": None, "results": [],}
-    )
-
-
-@pytest.mark.django_db
-@scripted_test
-def test_create_contexts(superuser):
+def test_create_access_controlled_resource(superuser):
     Given.http.force_authenticate(user=superuser.instance)
-    When.http.get(reverse("examplerbaccontext-list"))
+    When.http.get(reverse("exampleaccesscontrolledmodel-list"))
     Then.http.status_code_is(200)
     And.http.response_json_is(
         {"count": 0, "next": None, "previous": None, "results": [],}
     )
 
-    When.http.post(reverse("examplerbaccontext-list"), {"name": "foo"}, format="json")
+    When.http.post(
+        reverse("exampleaccesscontrolledmodel-list"),
+        {"name": "foo", "rbac_context": ""},
+        format="json",
+    )
     Then.http.status_code_is(201)
     When.http.get_created()
     Then.http.status_code_is(200)
     And.http.response_json_is({"name": "foo"})
 
     # FIXME delete after testing, add envelope testing
-    # When.http.get(reverse("examplerbaccontext-list"))
+    # When.http.get(reverse("exampleaccesscontrolledmodel-list"))
     # print(http_response.json())
     # print(http_response._headers)
     # raise Exception("just want the trace")
@@ -105,7 +98,7 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
     # Create a context
     Given.http.force_authenticate(user=superuser.instance)
     When.http.post(
-            reverse("examplerbaccontext-list"), {"name": context_name}, format="json")
+            reverse("exampleaccesscontrolledmodel-list"), {"name": context_name}, format="json")
     Then.http.status_code_is(201)
     context_url = http_response["location"]
     logging.info(context_url)
@@ -143,7 +136,7 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
 
     # Assign the role to editor_user
     When.http.post(
-            reverse("roleassignments-list"),
+            reverse("roleassignment-list"),
             {
                 "user": editor_user_url,
                 "role": role_url,
@@ -158,9 +151,9 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
 
     # Create a protected resource as editor_user
     protected_resource_content = {
-            "definition_json": {},
+            "definition": {},
             "rbac_context": context_url,
-        },
+        }
     When.http.post(reverse("role-list"), protected_resource_content, format="json")
     Then.http.status_code_is(201)
     protected_resource_url = http_response["location"]
@@ -172,20 +165,31 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
 
     # Update the resource
     updated_content = {
-            "definition_json": {
+            "definition": {
                 "GET": True,
-                },
+            },
             "rbac_context": context_url,
         }
-    When.http.put(protected_resource_url, updated_content)
+    When.http.put(protected_resource_url, updated_content, format="json")
     Then.http.status_code_is(200)
-    When.http.get(protected_resourceurl)
+    When.http.get(protected_resource_url)
     Then.http.status_code_is(200)
     And.http.response_json_is(updated_content)
 
     # Get the resource list as the editor_user
     When.http.get(reverse("role-list"))
     Then.http.status_code_is(200)
+
+    # Try creating a resource in an unauthorized context
+    When.http.post(
+            reverse("role-list"),
+            {
+                "definition": {},
+                "rbac_context": fake.pystr(min_chars=10, max_chars=20),
+            },
+            format="json",
+        )
+    Then.http.status_code_is(403)
 
     # Switch to the not_authorized_user
     Given.http.force_authenticate(user=not_authorized_user.instance)
@@ -220,7 +224,7 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
     Given.http.force_authenticate(user=editor_user.instance)
     And.http.get(protected_resource_content)
     And.http.delete(protected_resource_url)
-    Then.status_code_is(200)
+    Then.http.status_code_is_one_of(200, 204)
 
     # double check it's gone
     When.http.get(protected_resource_url)

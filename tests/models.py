@@ -1,5 +1,5 @@
 from django.db import models
-from scoped_rbac.models import AccessControlledModel, IdentifiedByIRI, RbacContext
+from scoped_rbac.models import AccessControlledModel
 from scoped_rbac.registry import ResourceType
 
 
@@ -11,7 +11,7 @@ class ScopedRbacTestModel(models.Model):
         abstract = True
 
 
-class ExampleRbacContext(ScopedRbacTestModel, AccessControlledModel, RbacContext):
+class ExampleAccessControlledModel(ScopedRbacTestModel, AccessControlledModel):
     class Meta:
         get_latest_by = "updated_at"
 
@@ -22,11 +22,7 @@ class ExampleRbacContext(ScopedRbacTestModel, AccessControlledModel, RbacContext
 
 
     resource_type = ResourceType(
-        "rbac.ExampleRbacContext",
-        "ExampleRbacContext",
-        "An example context for testing and demonstration purposes.",
+        "rbac.ExampleAccessControlledModel",
+        "ExampleAccessControlledModel",
+        "An example AccessControlledModel for testing and demonstration purposes.",
     )
-
-    def rbac_context(self):
-        return self.parent_context.get() or self
-

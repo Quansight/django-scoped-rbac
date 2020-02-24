@@ -1,12 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Context, Role, RoleAssignment
-
-
-class ContextSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = Context
-        fields = ("id", "object_id", "content_object")
+from .models import Role, RoleAssignment
 
 
 class RoleSerializer(serializers.HyperlinkedModelSerializer):

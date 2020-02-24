@@ -1,10 +1,7 @@
 from rest_framework import permissions
-from .models import RbacContext, RoleAssignment
+from .models import RoleAssignment
 from .policy import ALLOWED, NOT_ALLOWED, Permission, RecursivePolicyMap
-
-
-DEFAULT_CONTEXT = "__DEFAULT_CONTEXT__"
-SOME_CONTEXT = "__SOME_CONTEXT__"
+from .rbac_contexts import DEFAULT_CONTEXT, SOME_CONTEXT
 
 
 def policy_for(request):
@@ -25,7 +22,7 @@ def policy_for(request):
         if role not in policy_by_role:
             policy_by_role[role] = role.as_policy
         policy_for_role = policy_by_role[role]
-        total_policy.add(policy_for_role, role_assignment.context.id)
+        total_policy.add(policy_for_role, role_assignment.rbac_context)
         total_policy.add(policy_for_role, SOME_CONTEXT)
     return total_policy
 
@@ -46,15 +43,12 @@ class IsAuthorized(permissions.BasePermission):
         if not hasattr(view, "resource_type_iri_for"):
             return True
         policy = policy_for(request)
-        context_id = obj.rbac_context.id if not isinstance(obj, RbacContext) else obj.id
-        result = policy.should_allow(
+        ret = policy.should_allow(
             Permission(http_action_iri_for(request), obj.resource_type.iri),
-            context_id,  # TODO this must be a string in context namespace...
+            obj.rbac_context,
             obj,
         )
-        # if result is False:
-            # raise Exception("false has_object_permission")
-        return result
+        return ret
 
     def has_permission(self, request, view):
         """
@@ -63,14 +57,17 @@ class IsAuthorized(permissions.BasePermission):
         if not hasattr(view, "resource_type_iri_for"):
             return True
         policy = policy_for(request)
-        resource = request.data if request.method in ("PUT", "POST") else None
-        result = policy.should_allow(
+        if request.method in ("PUT", "POST"):
+            resource = request.data if request.method in ("PUT", "POST") else None
+            rbac_context = resource.get("rbac_context", DEFAULT_CONTEXT)
+        else:
+            resource = None
+            rbac_context = SOME_CONTEXT
+        ret = policy.should_allow(
             Permission(
                 http_action_iri_for(request), view.resource_type_iri_for(request)
             ),
-            SOME_CONTEXT,
+            rbac_context,
             resource,
         )
-        # if result is False:
-            # raise Exception("false has__permission")
-        return result
+        return ret
