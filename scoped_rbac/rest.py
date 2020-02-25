@@ -5,6 +5,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from .filters import RbacFilter
 from .models import Role, RoleAssignment, UserResourceType
 from .permissions import DEFAULT_CONTEXT
 from .serializers import (
@@ -23,6 +24,7 @@ class AccessControlledAPIView:
     This `APIView` interface is required for non-object based views in combination with
     the `IsAuthorized` permission class.
     """
+    filter_backends = [RbacFilter]
 
     def resource_type_iri_for(self, request):
         """

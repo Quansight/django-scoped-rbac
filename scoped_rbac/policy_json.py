@@ -1,5 +1,5 @@
 import json
-from .policy import RecursivePolicyMap, ALLOWED, NOT_ALLOWED
+from .policy import RecursivePolicyMap, RootPolicyMap, ALLOWED, NOT_ALLOWED
 
 
 def json_loads_policy(policy_json):
