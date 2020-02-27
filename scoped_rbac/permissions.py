@@ -4,19 +4,16 @@ from . import policy
 from .rbac_contexts import DEFAULT_CONTEXT, SOME_CONTEXT
 
 
-# NOT_ALLOWED = policy.RootPolicyMap().add(policy.NOT_ALLOWED)
-# ALLOWED = policy.RootPolicyMap().add(policy.ALLOWED)
+NOT_ALLOWED = policy.RootPolicyMap().add(policy.NOT_ALLOWED)
+ALLOWED = policy.RootPolicyMap().add(policy.ALLOWED)
 
 
 def policy_for(request):
     # TODO figure out caching for this
     if request.user is None or request.user.is_anonymous:
-        effective_policy = policy.RootPolicyMap().add(policy.NOT_ALLOWED)
-        return effective_policy
+        return NOT_ALLOWED
     if request.user.is_superuser:
-        effective_policy = policy.RootPolicyMap()
-        effective_policy.add(policy.ALLOWED)
-        return effective_policy
+        return ALLOWED
     role_assignments = RoleAssignment.objects.filter(
         user=request.user
     ).prefetch_related("role")

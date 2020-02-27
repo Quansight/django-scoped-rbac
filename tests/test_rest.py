@@ -194,7 +194,7 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
 
 @pytest.mark.django_db
 @scripted_test
-def test_list_filtering(superuser, editor_user, not_authorized_user):
+def test_list_filtering(superuser, editor_user):
     fake = Faker()
     context1_name = fake.pystr(min_chars=10, max_chars=20)
     context2_name = fake.pystr(min_chars=10, max_chars=20)
@@ -209,11 +209,9 @@ def test_list_filtering(superuser, editor_user, not_authorized_user):
     When.get_role_list()
     Then.role_list_contains(role_in_context1_url, role_in_context2_url)
 
+    # validate editor_user sees only role in context1 in listing
     When.assign_role(role_in_context1_url, editor_user, context1_name)
     And.http.force_authenticate(user=editor_user.instance)
     And.get_role_list()
     Then.role_list_contains(role_in_context1_url)
     And.role_list_does_not_contain(role_in_context2_url)
-
-    # validate editor_user sees only role in context1 in listing
-    # validate not_authorized_user sees no roles in listing
