@@ -21,9 +21,8 @@ class Policy(object):
         """
         if isinstance(other_policy, ZeroPolicy):
             return self
-        if isinstance(other_policy, PolicyList) or isinstance(
-            other_policy, RecursivePolicyMap
-        ):
+        if isinstance(other_policy, PolicyList) \
+                or isinstance(other_policy, RecursivePolicyMap):
             return other_policy.do_sum_with(self)
         return self.do_sum_with(other_policy)
 
@@ -112,6 +111,8 @@ class RecursivePolicyMap(Policy):
     keyed by resource_type.
     """
 
+    #TODO Add an indexing action, resource_type, context_id list
+    
     def __init__(self):
         self.policies = dict()
         self.peer_policies = PolicyList()
@@ -165,6 +166,90 @@ class RecursivePolicyMap(Policy):
 
     def __repr__(self):
         return str(self.policies) + ", " + str(self.peer_policies)
+
+
+class RootPolicyMap(RecursivePolicyMap):
+    def __init__(self):
+        super().__init__()
+        self.is_super = False
+
+        # set (context_id)
+        self.any_action = set()
+
+        # str (action) -> set (context_id)
+        self.any_resource_by_action = dict()
+
+        # permission -> set (context_id)
+        self.contexts_by_permission = dict()
+
+    def should_allow(self, permission, context_id, resource=None):
+        if self.is_super:
+            return True
+        return super().should_allow(permission, context_id, resource)
+
+    def do_sum_with(self, other_policy):
+        if isinstance(other_policy, RootPolicyMap):
+            self.is_super = self.is_super or other_policy.is_super
+            self.any_action = union(self.any_action, other_policy.any_action)
+            for action, contexts in other_policy.any_resource_by_action.items():
+                self.any_resource_by_action[action] = union(
+                        self.any_resource_by_action.get(action, set()),
+                        other_policy.any_resource_by_action.get(action, set()))
+            for permission, contexts in other_policy.contexts_by_permission.items():
+                self.contexts_by_permission[permission] = union(
+                    self.contexts_by_permission.get(permission, set()),
+                    other_policy.contexts_by_permission.get(permission, set()))
+            super().do_sum_with(other_policy)
+            return self
+        else:
+            raise NotImplementedError()
+
+    def add(self, policy, *args):
+        if policy == ALLOWED and len(args) == 0:
+            self.is_super = True
+        elif policy != NOT_ALLOWED:
+            context = args[0]
+            self.add_action_policy(context, policy)
+            super().add(policy, *args)
+        return self
+
+    def add_action_policy(self, context_id, action_policy):
+        if (action_policy == ALLOWED
+                or isinstance(action_policy, ExpressionPolicy)
+                or isinstance(action_policy, PolicyList)):
+            self.any_action.add(context_id)
+        elif isinstance(action_policy, RecursivePolicyMap):
+            for action, resource_policy in action_policy.policies.items():
+                self.add_resource_policy(context_id, action, resource_policy)
+            for resource_policy in action_policy.peer_policies.policies:
+                # FIXME is this correct?
+                self.any_action.add(context_id)
+
+    def add_resource_policy(self, context_id, action, resource_policy):
+        if (resource_policy == ALLOWED
+                or isinstance(resource_policy, ExpressionPolicy)
+                or isinstance(resource_policy, PolicyList)):
+            contexts = self.any_resource_by_action.setdefault(action, set())
+            contexts.add(context_id)
+        elif isinstance(resource_policy, RecursivePolicyMap):
+            for resource, expression_policy in resource_policy.policies.items():
+                permission = Permission(action, resource)
+                contexts = self.contexts_by_permission.setdefault(permission, set())
+                contexts.add(context_id)
+            for policy in resource_policy.peer_policies.policies:
+                # FIXME is this correct?
+                contexts = self.any_resource_by_action.setdefault(action, set())
+                contexts.add(context_id)
+
+    def get_contexts_for(self, permission):
+        # TODO caching!
+        if self.is_super:
+            return None
+        contexts = list()
+        contexts.extend(self.any_action)
+        contexts.extend(self.any_resource_by_action.get(permission.action, set()))
+        contexts.extend(self.contexts_by_permission.get(permission, set()))
+        return contexts
 
 
 ALLOWED = AllowedPolicy()
