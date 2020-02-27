@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 from django.contrib.auth.models import User
-# from django.urls import reverse
 from faker import Faker
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
+from safetydance import step_data
 from safetydance_django.test import *
-from safetydance_django.steps import http_client, http_response
 from safetydance_test import scripted_test, Given, When, Then, And
 from scoped_rbac.models import Role
+from .step_extensions import *
 import logging
 import pytest
 
@@ -87,67 +87,29 @@ def test_create_access_controlled_resource(superuser):
     # raise Exception("just want the trace")
 
 
+
 @pytest.mark.django_db
 @scripted_test
 def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
     fake = Faker()
     context_name = fake.pystr(min_chars=10, max_chars=20)
-    editor_user_url = reverse("user-detail", [editor_user.instance.pk])
-    logging.info(editor_user_url)
 
-    # Create a context
     Given.http.force_authenticate(user=superuser.instance)
     When.http.post(
-            reverse("exampleaccesscontrolledmodel-list"), {"name": context_name}, format="json")
+            reverse("exampleaccesscontrolledmodel-list"),
+            {"name": context_name},
+            format="json")
     Then.http.status_code_is(201)
     context_url = http_response["location"]
-    logging.info(context_url)
 
     # Create a role
-    When.http.post(
-            reverse("role-list"),
-            {
-                "definition": {
-                    "http.POST": [
-                        Role.resource_type.iri,
-                        ],
-                    "http.GET": [
-                        Role.resource_type.iri,
-                        Role.resource_type.list_iri,
-                        ],
-                    "http.PUT": [
-                        Role.resource_type.iri,
-                        ],
-                    "http.DELETE": [
-                        Role.resource_type.iri,
-                        ],
-                },
-                # TODO add these fields
-                # "name": role_name,
-                # "description": role_description,
-                "rbac_context": context_url,
-            },
-            format="json",
-        )
-    logging.info(http_response)
-    logging.info(http_response.data)
-    Then.http.status_code_is(201)
-    role_url = http_response["location"]
+    Given.create_editor_role(context_url)
 
     # Assign the role to editor_user
-    When.http.post(
-            reverse("roleassignment-list"),
-            {
-                "user": editor_user_url,
-                "role": role_url,
-                "rbac_context": context_url,
-            },
-            format="json",
-        )
-    Then.http.status_code_is(201)
+    And.assign_role(role_url, editor_user, context_url)
 
     # Switch to the editor_user
-    Given.http.force_authenticate(user=editor_user.instance)
+    And.http.force_authenticate(user=editor_user.instance)
 
     # Create a protected resource as editor_user
     protected_resource_content = {
@@ -229,3 +191,29 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
     # double check it's gone
     When.http.get(protected_resource_url)
     Then.http.status_code_is(404)
+
+@pytest.mark.django_db
+@scripted_test
+def test_list_filtering(superuser, editor_user, not_authorized_user):
+    fake = Faker()
+    context1_name = fake.pystr(min_chars=10, max_chars=20)
+    context2_name = fake.pystr(min_chars=10, max_chars=20)
+
+    Given.http.force_authenticate(user=superuser.instance)
+    And.create_editor_role(context1_name)
+    role_in_context1_url = role_url
+    And.create_editor_role(context2_name)
+    role_in_context2_url = role_url
+
+    # validate superuser sees both roles in listing
+    When.get_role_list()
+    Then.role_list_contains(role_in_context1_url, role_in_context2_url)
+
+    When.assign_role(role_in_context1_url, editor_user, context1_name)
+    And.http.force_authenticate(user=editor_user.instance)
+    And.get_role_list()
+    Then.role_list_contains(role_in_context1_url)
+    And.role_list_does_not_contain(role_in_context2_url)
+
+    # validate editor_user sees only role in context1 in listing
+    # validate not_authorized_user sees no roles in listing

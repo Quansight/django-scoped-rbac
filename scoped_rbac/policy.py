@@ -168,22 +168,26 @@ class RecursivePolicyMap(Policy):
         return str(self.policies) + ", " + str(self.peer_policies)
 
 
-class RootPolicyMap(Policy):
+class RootPolicyMap(RecursivePolicyMap):
     def __init__(self):
         super().__init__()
-        self.policy_map = RecursivePolicyMap()
         self.is_super = False
+
         # set (context_id)
         self.any_action = set()
+
         # str (action) -> set (context_id)
         self.any_resource_by_action = dict()
+
         # permission -> set (context_id)
         self.contexts_by_permission = dict()
 
     def should_allow(self, permission, context_id, resource=None):
-        return self.policy_map.should_allow(permission, context_id, resource)
+        if self.is_super:
+            return True
+        return super().should_allow(permission, context_id, resource)
 
-    def sum_with(self, other_policy):
+    def do_sum_with(self, other_policy):
         if isinstance(other_policy, RootPolicyMap):
             self.is_super = self.is_super or other_policy.is_super
             self.any_action = union(self.any_action, other_policy.any_action)
@@ -195,34 +199,46 @@ class RootPolicyMap(Policy):
                 self.contexts_by_permission[permission] = union(
                     self.contexts_by_permission.get(permission, set()),
                     other_policy.contexts_by_permission.get(permission, set()))
-            self.policy_map = self.policy_map.sum_with(other_policy.policy_map)
+            super().do_sum_with(other_policy)
             return self
         else:
             raise NotImplementedError()
 
     def add(self, policy, *args):
-        if policy == ALLOWED:
+        if policy == ALLOWED and len(args) == 0:
             self.is_super = True
-        else:
-            for context_id, action_policy in policy.items():
-                self.add_action_policy(context_id, action_policy)
-        self.policy_map.add(policy, *args)
+        elif policy != NOT_ALLOWED:
+            context = args[0]
+            self.add_action_policy(context, policy)
+            super().add(policy, *args)
+        return self
 
     def add_action_policy(self, context_id, action_policy):
-        if action_policy == ALLOWED:
+        if (action_policy == ALLOWED
+                or isinstance(action_policy, ExpressionPolicy)
+                or isinstance(action_policy, PolicyList)):
             self.any_action.add(context_id)
-        else:
-            for action, resource_policy in action_policy.items():
+        elif isinstance(action_policy, RecursivePolicyMap):
+            for action, resource_policy in action_policy.policies.items():
                 self.add_resource_policy(context_id, action, resource_policy)
+            for resource_policy in action_policy.peer_policies.policies:
+                # FIXME is this correct?
+                self.any_action.add(context_id)
 
     def add_resource_policy(self, context_id, action, resource_policy):
-        if resource_policy == ALLOWED:
+        if (resource_policy == ALLOWED
+                or isinstance(resource_policy, ExpressionPolicy)
+                or isinstance(resource_policy, PolicyList)):
             contexts = self.any_resource_by_action.setdefault(action, set())
             contexts.add(context_id)
-        else:
-            for resource, expression_policy in resource_policy.items():
+        elif isinstance(resource_policy, RecursivePolicyMap):
+            for resource, expression_policy in resource_policy.policies.items():
                 permission = Permission(action, resource)
                 contexts = self.contexts_by_permission.setdefault(permission, set())
+                contexts.add(context_id)
+            for policy in resource_policy.peer_policies.policies:
+                # FIXME is this correct?
+                contexts = self.any_resource_by_action.setdefault(action, set())
                 contexts.add(context_id)
 
     def get_contexts_for(self, permission):
@@ -234,9 +250,6 @@ class RootPolicyMap(Policy):
         contexts.extend(self.any_resource_by_action.get(permission.action, set()))
         contexts.extend(self.contexts_by_permission.get(permission, set()))
         return contexts
-
-    def __repr__(self):
-        return self.policy_map.__repr__()
 
 
 ALLOWED = AllowedPolicy()

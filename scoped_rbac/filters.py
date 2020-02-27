@@ -1,5 +1,6 @@
 from rest_framework.filters import BaseFilterBackend
 from .permissions import http_action_iri_for, policy_for
+from .policy import Permission
 
 
 class RbacFilter(BaseFilterBackend):
@@ -9,7 +10,7 @@ class RbacFilter(BaseFilterBackend):
     """
     def filter_queryset(self, request, queryset, view):
         if request.method == "GET":
-            self.filter_queryset_for_get(request, queryset, view)
+            return self.filter_queryset_for_get(request, queryset, view)
         else:
             return queryset
 
@@ -23,4 +24,3 @@ class RbacFilter(BaseFilterBackend):
         if not contexts:
             return queryset.none()
         return queryset.filter(rbac_context__in=contexts)
-        ...

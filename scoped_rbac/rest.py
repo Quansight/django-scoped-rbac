@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User
-from django.urls import reverse
+# from django.urls import reverse
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from .filters import RbacFilter
@@ -56,11 +57,14 @@ class AccessControlledAPIView:
         return f"{self.resource_type_iri}/list"
 
 
-class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
-    def get_success_headers(self, instance):
+class AccessControlledModelViewSet(AccessControlledAPIView, ModelViewSet):
+    def get_success_headers(self, instance, request=None):
         try:
             return {
-                "Location": reverse(self.basename + "-detail", args=[instance.id])
+                "Location": reverse(
+                    self.basename + "-detail",
+                    args=[instance.id],
+                    request=request)
             }
         except (TypeError, KeyError):
             return {}
@@ -73,7 +77,7 @@ class AccessControlledModelViewSet(ModelViewSet, AccessControlledAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.instance)
+        headers = self.get_success_headers(serializer.instance, request=request)
         # headers["etag"] = serializer.etag()
         # headers["last-modified"] = serializer.last_modified()
         # if serializer.link_header_content():
