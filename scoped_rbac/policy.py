@@ -32,6 +32,9 @@ class Policy(object):
         new_policy.sum_with(other_policy)
         return new_policy
 
+    def to_json(self):
+        return False
+
     def __repr__(self):
         return "Policy)"
 
@@ -44,12 +47,18 @@ class ZeroPolicy(Policy):
     def do_sum_with(self, other_policy):
         return other_policy
 
+    def to_json(self):
+        raise NotImplementedError()
+
     def __repr__(self):
         return "ZeroPolicy"
 
 
 class AllowedPolicy(Policy):
     def should_allow(self, permission, context_id, resource=None):
+        return True
+
+    def to_json(self):
         return True
 
     def __repr__(self):
@@ -67,10 +76,13 @@ class ExpressionPolicy(Policy):
         self.expression = expression
 
     def evaluate(self, permission, context_id, resource=None):
-        raise "Not implemented"
+        raise NotImplementedError()
 
     def should_allow(self, permission, context_id, resource=None):
         return self.evaluate(self, permission, context_id, resource)
+
+    def to_json(self):
+        raise NotImplementedError()
 
 
 class PolicyList(Policy):
@@ -98,6 +110,9 @@ class PolicyList(Policy):
             if policy.should_allow(permission, context_id, resource):
                 return True
         return False
+
+    def to_json(self):
+        return [policy.to_json() for policy in self.policies]
 
     def __repr__(self):
         body = ", ".join(self.policies)
@@ -163,6 +178,17 @@ class RecursivePolicyMap(Policy):
                 new_recursive_policy.sum_with(current_policy)
                 new_recursive_policy.add(policy, *args[1:])
                 self.policies[key] = new_recursive_policy
+
+    def to_json(self):
+        policy = {
+            key: policy.to_json() for key, policy in self.policies.items()
+            }
+        if not self.peer_policies:
+            return policy
+        peers = self.peer_policies.to_json()
+        if policy:
+            peers.append(policy)
+        return peers
 
     def __repr__(self):
         return str(self.policies) + ", " + str(self.peer_policies)
@@ -250,6 +276,11 @@ class RootPolicyMap(RecursivePolicyMap):
         contexts.extend(self.any_resource_by_action.get(permission.action, set()))
         contexts.extend(self.contexts_by_permission.get(permission, set()))
         return contexts
+
+    def to_json(self):
+        if self.is_super:
+            return True
+        return super().to_json()
 
 
 ALLOWED = AllowedPolicy()

@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from .filters import RbacFilter
 from .models import Role, RoleAssignment, UserResourceType
-from .permissions import DEFAULT_CONTEXT
+from .permissions import DEFAULT_CONTEXT, policy_for
 from .serializers import (
     RoleSerializer,
     RoleAssignmentSerializer,
@@ -32,7 +32,7 @@ class AccessControlledAPIView:
         Return the resource_type_iri for the resource type indicated by this request.
         """
 
-        if self.action == "list":
+        if hasattr(self, "action") and self.action == "list":
             return self.list_type_iri
         else:
             return self.resource_type_iri
@@ -140,3 +140,13 @@ class UserViewSet(AccessControlledModelViewSet):
     @property
     def resource_type_iri(self):
         return UserResourceType.iri
+
+
+class UserRbacPolicyView(AccessControlledAPIView, APIView):
+    @property
+    def resource_type_iri(self):
+        return "rbac.Policy"
+
+    def get(self, request):
+        user_policy = policy_for(request)
+        return Response(user_policy.to_json())

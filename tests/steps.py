@@ -85,3 +85,10 @@ def assign_role(role_url, user, context_url):
         format="json",
     )
     Then.http.status_code_is(201)
+
+@step
+def get_user_rbac_policy():
+    When.http.get(
+        reverse("user-rbac-policy"),
+        format="json",
+        )

@@ -87,11 +87,11 @@ def test_create_access_controlled_resource(superuser):
     # raise Exception("just want the trace")
 
 
+fake = step_data(Faker, initializer=Faker)
 
 @pytest.mark.django_db
 @scripted_test
 def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
-    fake = Faker()
     context_name = fake.pystr(min_chars=10, max_chars=20)
 
     Given.http.force_authenticate(user=superuser.instance)
@@ -195,7 +195,6 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
 @pytest.mark.django_db
 @scripted_test
 def test_list_filtering(superuser, editor_user):
-    fake = Faker()
     context1_name = fake.pystr(min_chars=10, max_chars=20)
     context2_name = fake.pystr(min_chars=10, max_chars=20)
 
@@ -215,3 +214,14 @@ def test_list_filtering(superuser, editor_user):
     And.get_role_list()
     Then.role_list_contains(role_in_context1_url)
     And.role_list_does_not_contain(role_in_context2_url)
+
+
+@pytest.mark.django_db
+@scripted_test
+def test_get_user_rbac_policy(superuser, editor_user):
+    Given.http.force_authenticate(user=superuser.instance)
+    When.get_user_rbac_policy()
+    Then.http.status_code_is(200)
+    And.http.response_json_is(True)
+
+    # TODO more comprehensive testing
