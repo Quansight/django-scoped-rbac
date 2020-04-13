@@ -97,6 +97,7 @@ class Expression(Policy):
     def from_json(cls, json_policy):
         return Expression(json_policy)
 
+
 class ExpressionList(Policy):
     def __init__(self, *args):
         self.expressions = args
@@ -126,7 +127,7 @@ class ExpressionList(Policy):
         return f"ExpressionList [ {', '.join([repr(expr) for expr in self.expressions])}  ]"
 
     def to_json(self):
-        return [ expr.to_json() for expr in self.expressions ]
+        return [expr.to_json() for expr in self.expressions]
 
     @classmethod
     def from_json(cls, json_policy):
@@ -144,9 +145,11 @@ class PolicySet(Policy):
         return key in self.allowed
 
     def sum_with(self, other_policy):
-        if isinstance(other_policy, PolicyBoolean) \
-                or isinstance(other_policy, Expression) \
-                or isinstance(other_policy, ExpressionList):
+        if (
+            isinstance(other_policy, PolicyBoolean)
+            or isinstance(other_policy, Expression)
+            or isinstance(other_policy, ExpressionList)
+        ):
             return other_policy.sum_with(self)
         if isinstance(other_policy, PolicySet):
             return PolicySet(*self.allowed.union(other_policy.allowed))
@@ -184,9 +187,11 @@ class PolicyDict(Policy):
         return policy.should_allow(*args[1:], *kwargs)
 
     def sum_with(self, other_policy):
-        if isinstance(other_policy, PolicyBoolean) \
-                or isinstance(other_policy, Expression) \
-                or isinstance(other_policy, ExpressionList):
+        if (
+            isinstance(other_policy, PolicyBoolean)
+            or isinstance(other_policy, Expression)
+            or isinstance(other_policy, ExpressionList)
+        ):
             return other_policy.sum_with(self)
         if isinstance(other_policy, PolicySet):
             return other_policy.sum_with(self)
@@ -233,34 +238,37 @@ class CompoundPolicy(Policy):
         self.expressions = expressions or ExpressionList()
 
     def should_allow(self, *args, **kwargs):
-        return self.policy_dict.should_allow(*args, **kwargs) or \
-                self.expressions.should_allow(*args, **kwargs)
+        return self.policy_dict.should_allow(
+            *args, **kwargs
+        ) or self.expressions.should_allow(*args, **kwargs)
 
     def sum_with(self, other_policy):
         return other_policy.sum_with(self)
 
     def add_expression(self, expression):
         return CompoundPolicy(
-                policy_dict=self.policy_dict,
-                expressions=self.expressions.sum_with(expression),
-            )
+            policy_dict=self.policy_dict,
+            expressions=self.expressions.sum_with(expression),
+        )
 
     def add_policy_set(self, policy_set):
         return CompoundPolicy(
-                policy_dict=self.policy_dict,
-                policy_set=policy_set,
-                expressions=self.expressions,
-            )
+            policy_dict=self.policy_dict,
+            policy_set=policy_set,
+            expressions=self.expressions,
+        )
 
     def add_policy_dict(self, policy_dict):
         return CompoundPolicy(
-                policy_dict=self.policy_dict.sum_with(policy_dict),
-                expressions=self.expressions,
-            )
+            policy_dict=self.policy_dict.sum_with(policy_dict),
+            expressions=self.expressions,
+        )
 
     def __repr__(self):
-        return f"CompoundPolicy {{ expressions: {repr(self.expressions)}, " \
+        return (
+            f"CompoundPolicy {{ expressions: {repr(self.expressions)}, "
             f"policy_dict: {repr(self.policy_dict)} }}"
+        )
 
     def to_json(self):
         ret = dict()
@@ -321,7 +329,7 @@ class RootPolicy:
         return self.policy.to_json()
 
     def get_contexts_for(self, permission):
-        #FIXME This isn't done, yet
+        # FIXME This isn't done, yet
         if isinstance(self.policy, PolicyDict):
             return self.policy.keys()
         if isinstance(self.policy, CompoundPolicy) and self.policy.expressions is None:

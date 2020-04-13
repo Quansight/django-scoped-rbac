@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+
 # from django.urls import reverse
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
@@ -10,11 +11,7 @@ from rest_framework.viewsets import ModelViewSet
 from .filters import RbacFilter
 from .models import Role, RoleAssignment, UserResourceType
 from .permissions import DEFAULT_CONTEXT, policy_for
-from .serializers import (
-    RoleSerializer,
-    RoleAssignmentSerializer,
-    UserSerializer,
-)
+from .serializers import RoleSerializer, RoleAssignmentSerializer, UserSerializer
 
 
 class DefaultPageNumberPagination(PageNumberPagination):
@@ -26,6 +23,7 @@ class AccessControlledAPIView:
     This `APIView` interface is required for non-object based views in combination with
     the `IsAuthorized` permission class.
     """
+
     filter_backends = [RbacFilter]
 
     def resource_type_iri_for(self, request):
@@ -38,7 +36,6 @@ class AccessControlledAPIView:
         else:
             return self.resource_type_iri
 
-
     @property
     def resource_type_iri(self):
         """
@@ -47,7 +44,6 @@ class AccessControlledAPIView:
         """
 
         raise NotImplementedError()
-
 
     @property
     def list_type_iri(self):
@@ -63,15 +59,14 @@ class AccessControlledModelViewSet(AccessControlledAPIView, ModelViewSet):
         try:
             return {
                 "Location": reverse(
-                    self.basename + "-detail",
-                    args=[instance.id],
-                    request=request)
+                    self.basename + "-detail", args=[instance.id], request=request
+                )
             }
         except (TypeError, KeyError):
             return {}
 
     def list(self, request, *args, **kwargs):
-        #TODO restrict listing to authorized contexts
+        # TODO restrict listing to authorized contexts
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
@@ -82,21 +77,21 @@ class AccessControlledModelViewSet(AccessControlledAPIView, ModelViewSet):
         # headers["etag"] = serializer.etag()
         # headers["last-modified"] = serializer.last_modified()
         # if serializer.link_header_content():
-            # headers["link"] = serializer.link_header_content()
+        # headers["link"] = serializer.link_header_content()
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
 
     def retrieve(self, request, *args, **kwargs):
-        #TODO authorize
+        # TODO authorize
         return super().retrieve(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
-        #TODO authorize
+        # TODO authorize
         return super().update(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        #TODO authorize
+        # TODO authorize
         return super().delete(request, *args, **kwargs)
 
 
@@ -144,7 +139,8 @@ class UserViewSet(AccessControlledModelViewSet):
 
 
 class UserRbacPolicyView(APIView):
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [IsAuthenticated]
+
     @property
     def resource_type_iri(self):
         return "rbac.Policy"

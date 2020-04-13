@@ -18,8 +18,7 @@ class ExampleAccessControlledModel(ScopedRbacTestModel, AccessControlledModel):
     name = models.CharField(max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    parent_context = models.ForeignKey('self', null=True, on_delete=models.CASCADE)
-
+    parent_context = models.ForeignKey("self", null=True, on_delete=models.CASCADE)
 
     resource_type = ResourceType(
         "rbac.ExampleAccessControlledModel",

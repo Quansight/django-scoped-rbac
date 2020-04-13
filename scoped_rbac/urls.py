@@ -9,8 +9,6 @@ router.register(r"users", rest.UserViewSet)
 
 urlpatterns = router.urls + [
     path(
-        "user-rbac-policy/",
-        rest.UserRbacPolicyView.as_view(),
-        name='user-rbac-policy',
-        )
-    ]
+        "user-rbac-policy/", rest.UserRbacPolicyView.as_view(), name="user-rbac-policy"
+    )
+]

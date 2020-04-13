@@ -14,6 +14,7 @@ class IdentifiedByIRI(object):
 
     Subclasses **MUST** define a `resource_type: ResourceType` property.
     """
+
     ...
 
 
@@ -59,9 +60,5 @@ class RoleAssignment(AccessControlledModel):
     )
 
 
-#TODO Figure out how to support custom User models
-UserResourceType = ResourceType(
-    "rbac.User",
-    "User",
-    "A resource representing a User.",
-)
+# TODO Figure out how to support custom User models
+UserResourceType = ResourceType("rbac.User", "User", "A resource representing a User.")

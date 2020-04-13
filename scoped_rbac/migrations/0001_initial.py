@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"unique_together": {("content_type", "object_id")},},
+            options={"unique_together": {("content_type", "object_id")}},
         ),
         migrations.CreateModel(
             name="Role",
@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"abstract": False,},
+            options={"abstract": False},
         ),
         migrations.CreateModel(
             name="RoleAssignment",
@@ -98,6 +98,6 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={"abstract": False,},
+            options={"abstract": False},
         ),
     ]

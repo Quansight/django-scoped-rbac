@@ -25,7 +25,8 @@ def policy_for(request):
             policy_by_role[role] = role.as_policy
         policy_for_role = policy_by_role[role]
         total_policy.add_policy_for_context(
-                policy_for_role, role_assignment.rbac_context)
+            policy_for_role, role_assignment.rbac_context
+        )
         total_policy.add_policy_for_context(policy_for_role, SOME_CONTEXT)
     return total_policy
 

@@ -28,14 +28,11 @@ def create_user(is_super=False):
     email = f"{name}@example.com"
     passwd = fake.pystr(min_chars=12, max_chars=20)
     if is_super:
-        user = User.objects.create_superuser(name, email, passwd,)
+        user = User.objects.create_superuser(name, email, passwd)
     else:
         user = User.objects.create(
-                username=name,
-                email=email,
-                password=passwd,
-                is_active=True,
-                )
+            username=name, email=email, password=passwd, is_active=True
+        )
     user.save()
     return TestUser(name, email, passwd, user)
 
@@ -50,6 +47,7 @@ def superuser(transactional_db):
     # superuser.save()
     # return TestUser(name, email, passwd, superuser)
     return create_user(is_super=True)
+
 
 @pytest.fixture()
 def editor_user(transactional_db):
@@ -68,7 +66,7 @@ def test_create_access_controlled_resource(superuser):
     When.http.get(reverse("exampleaccesscontrolledmodel-list"))
     Then.http.status_code_is(200)
     And.http.response_json_is(
-        {"count": 0, "next": None, "previous": None, "results": [],}
+        {"count": 0, "next": None, "previous": None, "results": []}
     )
 
     When.http.post(
@@ -90,6 +88,7 @@ def test_create_access_controlled_resource(superuser):
 
 fake = step_data(Faker, initializer=Faker)
 
+
 @pytest.mark.django_db
 @scripted_test
 def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
@@ -97,9 +96,10 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
 
     Given.http.force_authenticate(user=superuser.instance)
     When.http.post(
-            reverse("exampleaccesscontrolledmodel-list"),
-            {"name": context_name},
-            format="json")
+        reverse("exampleaccesscontrolledmodel-list"),
+        {"name": context_name},
+        format="json",
+    )
     Then.http.status_code_is(201)
     context_url = http_response["location"]
 
@@ -113,26 +113,18 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
     And.http.force_authenticate(user=editor_user.instance)
 
     # Create a protected resource as editor_user
-    protected_resource_content = {
-            "definition": {},
-            "rbac_context": context_url,
-        }
+    protected_resource_content = {"definition": {}, "rbac_context": context_url}
     When.http.post(reverse("role-list"), protected_resource_content, format="json")
     Then.http.status_code_is(201)
     protected_resource_url = http_response["location"]
 
-    # Get the resource 
+    # Get the resource
     When.http.get(protected_resource_url)
     Then.http.status_code_is(200)
     And.http.response_json_is(protected_resource_content)
 
     # Update the resource
-    updated_content = {
-            "definition": {
-                "GET": True,
-            },
-            "rbac_context": context_url,
-        }
+    updated_content = {"definition": {"GET": True}, "rbac_context": context_url}
     When.http.put(protected_resource_url, updated_content, format="json")
     Then.http.status_code_is(200)
     When.http.get(protected_resource_url)
@@ -145,13 +137,10 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
 
     # Try creating a resource in an unauthorized context
     When.http.post(
-            reverse("role-list"),
-            {
-                "definition": {},
-                "rbac_context": fake.pystr(min_chars=10, max_chars=20),
-            },
-            format="json",
-        )
+        reverse("role-list"),
+        {"definition": {}, "rbac_context": fake.pystr(min_chars=10, max_chars=20)},
+        format="json",
+    )
     Then.http.status_code_is(403)
 
     # Switch to the not_authorized_user
@@ -193,6 +182,7 @@ def test_simple_role_assignment(superuser, editor_user, not_authorized_user):
     When.http.get(protected_resource_url)
     Then.http.status_code_is(404)
 
+
 @pytest.mark.django_db
 @scripted_test
 def test_list_filtering(superuser, editor_user):
@@ -215,6 +205,7 @@ def test_list_filtering(superuser, editor_user):
     And.get_role_list()
     Then.role_list_contains(role_in_context1_url)
     And.role_list_does_not_contain(role_in_context2_url)
+
 
 @pytest.mark.django_db
 @scripted_test
@@ -243,8 +234,10 @@ def test_get_user_rbac_policy(superuser, editor_user):
     role_in_context2_json = http_response.json()
     When.http.force_authenticate(user=editor_user.instance)
     And.get_user_rbac_policy()
-    Then.http.response_json_is({
-        context1_name: role_in_context1_json["definition"],
-        context2_name: role_in_context2_json["definition"],
-        SOME_CONTEXT: role_in_context1_json["definition"],
-        })
+    Then.http.response_json_is(
+        {
+            context1_name: role_in_context1_json["definition"],
+            context2_name: role_in_context2_json["definition"],
+            SOME_CONTEXT: role_in_context1_json["definition"],
+        }
+    )

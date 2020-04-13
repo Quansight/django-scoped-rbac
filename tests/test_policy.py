@@ -87,12 +87,14 @@ class TestPolicySet:
 
 class TestPolicyDict:
     def test_should_allow(self):
-        policy = PolicyDict({
-            "one": POLICY_TRUE,
-            "two": PolicySet("a", "b"),
-            "three": PolicyDict({"foo": POLICY_TRUE}),
-            "context": PolicyDict({"action": PolicySet("resource1", "resource2")})
-        })
+        policy = PolicyDict(
+            {
+                "one": POLICY_TRUE,
+                "two": PolicySet("a", "b"),
+                "three": PolicyDict({"foo": POLICY_TRUE}),
+                "context": PolicyDict({"action": PolicySet("resource1", "resource2")}),
+            }
+        )
         assert policy.should_allow("anything") is False
         assert policy.should_allow("one") is True
         assert policy.should_allow("two", "a") is True
@@ -105,11 +107,11 @@ class TestPolicyDict:
         assert policy.should_allow("context", "action", "resource3") is False
 
     def test_sum_with_policy_true(self):
-        policy = PolicyDict({ "one": POLICY_TRUE })
+        policy = PolicyDict({"one": POLICY_TRUE})
         assert policy.sum_with(POLICY_TRUE) is POLICY_TRUE
 
     def test_sum_with_policy_false(self):
-        policy = PolicyDict({ "one": POLICY_TRUE })
+        policy = PolicyDict({"one": POLICY_TRUE})
         assert policy.sum_with(POLICY_FALSE) is policy
 
     def test_sum_with_policy_set(self):
@@ -120,18 +122,17 @@ class TestPolicyDict:
         assert policy.should_allow("three") is False
 
     def test_sum_with_policy_dict(self):
-        policy1 = PolicyDict({
-            "1": POLICY_TRUE,
-            "2": PolicyDict({
-                "2_1": POLICY_TRUE,
-                "2_2": PolicySet("2_2_1", "2_2_2"),
-            })
-        })
-        policy2 = PolicyDict({
-            "1": PolicySet("one"),
-            "2": PolicySet("3_1", "3_2"),
-            "3": POLICY_TRUE,
-        })
+        policy1 = PolicyDict(
+            {
+                "1": POLICY_TRUE,
+                "2": PolicyDict(
+                    {"2_1": POLICY_TRUE, "2_2": PolicySet("2_2_1", "2_2_2")}
+                ),
+            }
+        )
+        policy2 = PolicyDict(
+            {"1": PolicySet("one"), "2": PolicySet("3_1", "3_2"), "3": POLICY_TRUE}
+        )
 
         sum_policy = policy1.sum_with(policy2)
         assert sum_policy.should_allow("1", "anything") is True
@@ -147,12 +148,14 @@ class TestPolicyDict:
         assert sum_policy.should_allow("anything", "anything", "anything") is False
 
     def test_to_json(self):
-        policy = PolicyDict({
-            "one": POLICY_TRUE,
-            "two": PolicySet("a", "b"),
-            "three": PolicyDict({"foo": POLICY_TRUE}),
-            "context": PolicyDict({"action": PolicySet("resource1", "resource2")})
-        })
+        policy = PolicyDict(
+            {
+                "one": POLICY_TRUE,
+                "two": PolicySet("a", "b"),
+                "three": PolicyDict({"foo": POLICY_TRUE}),
+                "context": PolicyDict({"action": PolicySet("resource1", "resource2")}),
+            }
+        )
         policy_json = policy.to_json()
         assert policy_json["one"] is True
         assert "a" in policy_json["two"]

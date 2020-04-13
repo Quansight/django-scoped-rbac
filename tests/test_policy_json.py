@@ -1,10 +1,5 @@
 import json
-from scoped_rbac.policy import (
-    Permission,
-    PolicyDict,
-    RootPolicy,
-    policy_from_json,
-)
+from scoped_rbac.policy import Permission, PolicyDict, RootPolicy, policy_from_json
 
 
 permission_one = Permission(action="GET", resource_type="One")

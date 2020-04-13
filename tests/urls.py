@@ -7,7 +7,9 @@ from . import rest
 # from . import rest
 
 router = DefaultRouter()
-router.register(r"example-access-controlled-models", rest.ExampleAccessControlledModelViewSet)
+router.register(
+    r"example-access-controlled-models", rest.ExampleAccessControlledModelViewSet
+)
 # router.registry.extend(scoped_rbac.urls.router.registry)
 schema_view = get_schema_view("Test Scoped RBAC API")
 
