@@ -4,8 +4,8 @@ from . import policy
 from .rbac_contexts import DEFAULT_CONTEXT, SOME_CONTEXT
 
 
-NOT_ALLOWED = policy.RootPolicyMap().add(policy.NOT_ALLOWED)
-ALLOWED = policy.RootPolicyMap().add(policy.ALLOWED)
+NOT_ALLOWED = policy.RootPolicy().add_policy(policy.POLICY_FALSE)
+ALLOWED = policy.RootPolicy().add_policy(policy.POLICY_TRUE)
 
 
 def policy_for(request):
@@ -17,15 +17,16 @@ def policy_for(request):
     role_assignments = RoleAssignment.objects.filter(
         user=request.user
     ).prefetch_related("role")
-    total_policy = policy.RootPolicyMap()
+    total_policy = policy.RootPolicy()
     policy_by_role = dict()
     for role_assignment in role_assignments.all():
         role = role_assignment.role
         if role not in policy_by_role:
             policy_by_role[role] = role.as_policy
         policy_for_role = policy_by_role[role]
-        total_policy.add(policy_for_role, role_assignment.rbac_context)
-        total_policy.add(policy_for_role, SOME_CONTEXT)
+        total_policy.add_policy_for_context(
+                policy_for_role, role_assignment.rbac_context)
+        total_policy.add_policy_for_context(policy_for_role, SOME_CONTEXT)
     return total_policy
 
 

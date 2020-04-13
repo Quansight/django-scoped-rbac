@@ -3,69 +3,63 @@ RBAC Policies, with stubbed-out support for conditional expressions.
 """
 
 from collections import namedtuple
+import json
 
 
 Permission = namedtuple("Permission", "action, resource_type")
 
 
-class Policy(object):
-    def should_allow(self, permission, context_id, resource=None):
-        """
-        No actions are allowed by default.
-        """
-        return False
+class Policy:
+    def should_allow(self, *args, **kwargs):
+        raise NotImplementedError()
 
     def sum_with(self, other_policy):
-        """
-        Return a Policy representing the result of combining two Policy instances.
-        """
-        if isinstance(other_policy, ZeroPolicy):
-            return self
-        if isinstance(other_policy, PolicyList) \
-                or isinstance(other_policy, RecursivePolicyMap):
-            return other_policy.do_sum_with(self)
-        return self.do_sum_with(other_policy)
-
-    def do_sum_with(self, other_policy):
-        new_policy = PolicyList()
-        new_policy.sum_with(self)
-        new_policy.sum_with(other_policy)
-        return new_policy
-
-    def to_json(self):
-        return False
+        raise NotImplementedError()
 
     def __repr__(self):
-        return "Policy)"
-
-
-class ZeroPolicy(Policy):
-    """
-    Useful as a terminal object to implement simple `sum_with` logic.
-    """
-
-    def do_sum_with(self, other_policy):
-        return other_policy
+        raise NotImplementedError()
 
     def to_json(self):
         raise NotImplementedError()
 
-    def __repr__(self):
-        return "ZeroPolicy"
+
+class PolicyBoolean(Policy):
+    ...
 
 
-class AllowedPolicy(Policy):
-    def should_allow(self, permission, context_id, resource=None):
+class PolicyTrue(PolicyBoolean):
+    def should_allow(self, *args, **kwargs):
         return True
+
+    def sum_with(self, other_policy):
+        return self
+
+    def __repr__(self):
+        return "PolicyTrue"
 
     def to_json(self):
         return True
 
+
+class PolicyFalse(PolicyBoolean):
+    def should_allow(self, *args, **kwargs):
+        return False
+
+    def sum_with(self, other_policy):
+        return other_policy
+
     def __repr__(self):
-        return "AllowedPolicy"
+        return "PolicyFalse"
+
+    def to_json(self):
+        return False
 
 
-class ExpressionPolicy(Policy):
+POLICY_TRUE = PolicyTrue()
+POLICY_FALSE = PolicyFalse()
+
+
+class Expression(Policy):
     """
     Expression policies are initialized with a `dict` detailing the parameters
     to use in evaluating the expression to determine whether the policy
@@ -81,207 +75,255 @@ class ExpressionPolicy(Policy):
     def should_allow(self, permission, context_id, resource=None):
         return self.evaluate(self, permission, context_id, resource)
 
+    def sum_with(self, other_policy):
+        if isinstance(other_policy, PolicyBoolean):
+            return other_policy.sum_with(self)
+        if isinstance(other_policy, Expression):
+            return ExpressionList(self, other_policy)
+        if isinstance(other_policy, PolicySet):
+            return CompoundPolicy(expression=self, policy_set=other_policy)
+        if isinstance(other_policy, PolicyDict):
+            return CompoundPolicy(expression=self, policy_dict=other_policy)
+        if isinstance(other_policy, CompoundPolicy):
+            return other_policy.add_expression(self)
+
+    def __repr__(self):
+        return f"Expression {repr(self.expression)}"
+
     def to_json(self):
-        raise NotImplementedError()
+        return self.expression
 
+    @classmethod
+    def from_json(cls, json_policy):
+        return Expression(json_policy)
 
-class PolicyList(Policy):
-    """
-    A list of peer policies.
-    """
+class ExpressionList(Policy):
+    def __init__(self, *args):
+        self.expressions = args
 
-    def __init__(self):
-        self.policies = list()
-
-    def do_sum_with(self, other_policy):
-        if isinstance(other_policy, PolicyList):
-            self.policies.extend(other_policy.policies)
-        elif isinstance(other_policy, RecursivePolicyMap):
-            return other_policy.do_sum_with(self)
-        else:
-            self.policies.append(other_policy)
-        return self
-
-    def should_allow(self, permission, context_id, resource=None):
-        """
-        Will return True if _any_ policy contained in the list of policies returns True.
-        """
-        for policy in self.policies:
-            if policy.should_allow(permission, context_id, resource):
+    def should_allow(self, *args, **kwargs):
+        for expression in self.expressions:
+            if expression.should_allow(*args, **kwargs):
                 return True
         return False
 
-    def to_json(self):
-        return [policy.to_json() for policy in self.policies]
+    def sum_with(self, other_policy):
+        if isinstance(other_policy, PolicyBoolean):
+            return other_policy.sum_with(self)
+        if isinstance(other_policy, Expression):
+            return self.add(other_policy)
+        if isinstance(other_policy, PolicySet):
+            return CompoundPolicy(expression=self, policy_set=other_policy)
+        if isinstance(other_policy, PolicyDict):
+            return CompoundPolicy(expression=self, policy_dict=other_policy)
+        if isinstance(other_policy, CompoundExpression):
+            return other_policy.add_expression(self)
+
+    def add(self, expression):
+        return ExpressionList(expression, *self.expressions)
 
     def __repr__(self):
-        body = ", ".join(self.policies)
-        return "[" + body + "]"
+        return f"ExpressionList [ {', '.join([repr(expr) for expr in self.expressions])}  ]"
+
+    def to_json(self):
+        return [ expr.to_json() for expr in self.expressions ]
+
+    @classmethod
+    def from_json(cls, json_policy):
+        return ExpressionList(*[Expression.from_json(item) for item in json_policy])
 
 
-class RecursivePolicyMap(Policy):
-    """
-    A recursively constructed policy of policies. The root instance is keyed by
-    context_id.  The child instances are keyed by action. The grand-child instances are
-    keyed by resource_type.
-    """
+class PolicySet(Policy):
+    def __init__(self, *args):
+        self.allowed = set(args)
 
-    #TODO Add an indexing action, resource_type, context_id list
-    
-    def __init__(self):
-        self.policies = dict()
-        self.peer_policies = PolicyList()
+    def should_allow(self, *args, **kwargs):
+        if len(args) is 0:
+            return False
+        key = args[0]
+        return key in self.allowed
 
-    def do_sum_with(self, other_policy):
-        if isinstance(other_policy, RecursivePolicyMap):
-            self.recursive_sum_with(other_policy)
-        else:
-            self.peer_policies.sum_with(other_policy)
-        return self
+    def sum_with(self, other_policy):
+        if isinstance(other_policy, PolicyBoolean) \
+                or isinstance(other_policy, Expression) \
+                or isinstance(other_policy, ExpressionList):
+            return other_policy.sum_with(self)
+        if isinstance(other_policy, PolicySet):
+            return PolicySet(*self.allowed.union(other_policy.allowed))
+        if isinstance(other_policy, PolicyDict):
+            return other_policy.add_all([(key, POLICY_TRUE) for key in self.allowed])
+        if isinstance(other_policy, CompoundPolicy):
+            return other_policy.add_policy_set(self)
+        raise NotImplementedError(f"Unsupported type {type(other_policy)}")
+
+    def __repr__(self):
+        return f"PolicySet {repr(self.allowed)}"
+
+    def to_json(self):
+        """Convert to JSON. Returns a sorted list so that the representation of the set
+        may be stable for testing and other purposes.
+        """
+        return sorted(list(self.allowed))
+
+    @classmethod
+    def from_json(cls, json_policy):
+        if isinstance(json_policy, str):
+            return PolicySet(json_policy)
+        return PolicySet(*json_policy)
+
+
+class PolicyDict(Policy):
+    def __init__(self, policy_dict):
+        self.policies = policy_dict
+
+    def should_allow(self, *args, **kwargs):
+        if len(args) is 0:
+            return False
+        key = args[0]
+        policy = self.policies.get(key, POLICY_FALSE)
+        return policy.should_allow(*args[1:], *kwargs)
+
+    def sum_with(self, other_policy):
+        if isinstance(other_policy, PolicyBoolean) \
+                or isinstance(other_policy, Expression) \
+                or isinstance(other_policy, ExpressionList):
+            return other_policy.sum_with(self)
+        if isinstance(other_policy, PolicySet):
+            return other_policy.sum_with(self)
+        if isinstance(other_policy, PolicyDict):
+            return self.recursive_sum_with(other_policy)
+        if isinstance(other_policy, CompoundPolicy):
+            return other_policy.add_policy_set(self)
+        raise NotImplementedError(f"Unsupported type {type(other_policy)}")
+
+    def add_all(self, key_policy_pairs):
+        policies = dict(self.policies)
+        for key, policy in key_policy_pairs:
+            current = policies.get(key, POLICY_FALSE)
+            policies[key] = policy.sum_with(current)
+        return PolicyDict(policies)
 
     def recursive_sum_with(self, other_policy):
-        for k, v in other_policy:
-            current_policy = self.policies.get(k, ZeroPolicy())
-            self.policies[k] = current_policy.sum_with(v)
-
-    def should_allow(self, permission, context_id, resource=None):
-        """
-        Will return true if any peer policies or policies along the path returns True.
-        """
-        return self.do_should_allow(
-            [context_id, permission.action, permission.resource_type],
-            permission,
-            context_id,
-            resource,
-        )
-
-    def do_should_allow(self, path, permission, context_id, resource):
-        if self.peer_policies.should_allow(permission, context_id, resource):
-            return True
-        effective_policy = self.policies.get(path[0], ZeroPolicy())
-        if isinstance(effective_policy, RecursivePolicyMap):
-            return effective_policy.do_should_allow(
-                path[1:], permission, context_id, resource
-            )
-        return effective_policy.should_allow(permission, context_id, resource)
-
-    def add(self, policy, *args):
-        key = args[0]
-        current_policy = self.policies.get(key, ZeroPolicy())
-        if len(args) == 1:
-            self.policies[key] = current_policy.sum_with(policy)
-        else:
-            if isinstance(current_policy, RecursivePolicyMap):
-                current_policy.add(policy, *args[1:])
-            else:
-                new_recursive_policy = RecursivePolicyMap()
-                new_recursive_policy.sum_with(current_policy)
-                new_recursive_policy.add(policy, *args[1:])
-                self.policies[key] = new_recursive_policy
-
-    def to_json(self):
-        policy = {
-            key: policy.to_json() for key, policy in self.policies.items()
-            }
-        if not self.peer_policies:
-            return policy
-        peers = self.peer_policies.to_json()
-        if policy:
-            peers.append(policy)
-        return peers
+        policies = dict(self.policies)
+        for k, v in other_policy.policies.items():
+            current_policy = policies.get(k, POLICY_FALSE)
+            policies[k] = current_policy.sum_with(v)
+        return PolicyDict(policies)
 
     def __repr__(self):
-        return str(self.policies) + ", " + str(self.peer_policies)
-
-
-class RootPolicyMap(RecursivePolicyMap):
-    def __init__(self):
-        super().__init__()
-        self.is_super = False
-
-        # set (context_id)
-        self.any_action = set()
-
-        # str (action) -> set (context_id)
-        self.any_resource_by_action = dict()
-
-        # permission -> set (context_id)
-        self.contexts_by_permission = dict()
-
-    def should_allow(self, permission, context_id, resource=None):
-        if self.is_super:
-            return True
-        return super().should_allow(permission, context_id, resource)
-
-    def do_sum_with(self, other_policy):
-        if isinstance(other_policy, RootPolicyMap):
-            self.is_super = self.is_super or other_policy.is_super
-            self.any_action = union(self.any_action, other_policy.any_action)
-            for action, contexts in other_policy.any_resource_by_action.items():
-                self.any_resource_by_action[action] = union(
-                        self.any_resource_by_action.get(action, set()),
-                        other_policy.any_resource_by_action.get(action, set()))
-            for permission, contexts in other_policy.contexts_by_permission.items():
-                self.contexts_by_permission[permission] = union(
-                    self.contexts_by_permission.get(permission, set()),
-                    other_policy.contexts_by_permission.get(permission, set()))
-            super().do_sum_with(other_policy)
-            return self
-        else:
-            raise NotImplementedError()
-
-    def add(self, policy, *args):
-        if policy == ALLOWED and len(args) == 0:
-            self.is_super = True
-        elif policy != NOT_ALLOWED:
-            context = args[0]
-            self.add_action_policy(context, policy)
-            super().add(policy, *args)
-        return self
-
-    def add_action_policy(self, context_id, action_policy):
-        if (action_policy == ALLOWED
-                or isinstance(action_policy, ExpressionPolicy)
-                or isinstance(action_policy, PolicyList)):
-            self.any_action.add(context_id)
-        elif isinstance(action_policy, RecursivePolicyMap):
-            for action, resource_policy in action_policy.policies.items():
-                self.add_resource_policy(context_id, action, resource_policy)
-            for resource_policy in action_policy.peer_policies.policies:
-                # FIXME is this correct?
-                self.any_action.add(context_id)
-
-    def add_resource_policy(self, context_id, action, resource_policy):
-        if (resource_policy == ALLOWED
-                or isinstance(resource_policy, ExpressionPolicy)
-                or isinstance(resource_policy, PolicyList)):
-            contexts = self.any_resource_by_action.setdefault(action, set())
-            contexts.add(context_id)
-        elif isinstance(resource_policy, RecursivePolicyMap):
-            for resource, expression_policy in resource_policy.policies.items():
-                permission = Permission(action, resource)
-                contexts = self.contexts_by_permission.setdefault(permission, set())
-                contexts.add(context_id)
-            for policy in resource_policy.peer_policies.policies:
-                # FIXME is this correct?
-                contexts = self.any_resource_by_action.setdefault(action, set())
-                contexts.add(context_id)
-
-    def get_contexts_for(self, permission):
-        # TODO caching!
-        if self.is_super:
-            return None
-        contexts = list()
-        contexts.extend(self.any_action)
-        contexts.extend(self.any_resource_by_action.get(permission.action, set()))
-        contexts.extend(self.contexts_by_permission.get(permission, set()))
-        return contexts
+        return f"PolicyDict {repr(self.policies)}"
 
     def to_json(self):
-        if self.is_super:
-            return True
-        return super().to_json()
+        return {k: v.to_json() for k, v in self.policies.items()}
+
+    @classmethod
+    def from_json(cls, json_policy):
+        policies = {key: policy_from_json(value) for key, value in json_policy.items()}
+        return PolicyDict(policies)
+
+    def keys(self):
+        return self.policies.keys()
 
 
-ALLOWED = AllowedPolicy()
-NOT_ALLOWED = Policy()
+class CompoundPolicy(Policy):
+    def __init__(self, policy_dict=None, policy_set=None, expressions=None):
+        self.policy_dict = policy_dict or PolicyDict()
+        if policy_set:
+            self.policy_dict = self.policy_dict.sum_with(policy_set)
+        self.expressions = expressions or ExpressionList()
+
+    def should_allow(self, *args, **kwargs):
+        return self.policy_dict.should_allow(*args, **kwargs) or \
+                self.expressions.should_allow(*args, **kwargs)
+
+    def sum_with(self, other_policy):
+        return other_policy.sum_with(self)
+
+    def add_expression(self, expression):
+        return CompoundPolicy(
+                policy_dict=self.policy_dict,
+                expressions=self.expressions.sum_with(expression),
+            )
+
+    def add_policy_set(self, policy_set):
+        return CompoundPolicy(
+                policy_dict=self.policy_dict,
+                policy_set=policy_set,
+                expressions=self.expressions,
+            )
+
+    def add_policy_dict(self, policy_dict):
+        return CompoundPolicy(
+                policy_dict=self.policy_dict.sum_with(policy_dict),
+                expressions=self.expressions,
+            )
+
+    def __repr__(self):
+        return f"CompoundPolicy {{ expressions: {repr(self.expressions)}, " \
+            f"policy_dict: {repr(self.policy_dict)} }}"
+
+    def to_json(self):
+        ret = dict()
+        if self.expressions is not None:
+            ret["expressions"] = expressions.to_json()
+        if self.policy_dict is not None and self.policy_dict.keys():
+            ret["policy_dict"] = policy_dict.to_json()
+        return ret
+
+    @classmethod
+    def from_json(cls, json_policy):
+        expressions = None
+        policy_dict = None
+        if "expressions" in json_policy:
+            expressions = ExpressionList.from_json(json_policy["expressions"])
+        if "policy_dict" in json:
+            policy_dict = PolicyDict.from_json(json_policy["policy_dict"])
+        return CompoundPolicy(policy_dict=policy_dict, expressions=expressions)
+
+
+def policy_from_json(json_policy):
+    if json_policy is True:
+        return POLICY_TRUE
+    if json_policy is False:
+        return POLICY_FALSE
+    if isinstance(json_policy, list) or isinstance(json_policy, str):
+        return PolicySet.from_json(json_policy)
+    if isinstance(json_policy, dict):
+        if "expressions" in json_policy or "policy_dict" in json_policy:
+            return CompoundPolicy.from_json(json_policy)
+        return PolicyDict.from_json(json_policy)
+
+
+class RootPolicy:
+    def __init__(self):
+        self.policy = POLICY_FALSE
+
+    def should_allow(self, permission, context_id, resource=None):
+        return self.policy.should_allow(context_id, *permission, resource=resource)
+
+    def add_json_policy_for_context(self, json_policy, context):
+        policy = policy_from_json(json_policy)
+        self.add_policy(PolicyDict({context: policy}))
+        return self
+
+    def add_policy_for_context(self, policy, context):
+        self.add_policy(PolicyDict({context: policy}))
+        return self
+
+    def add_policy(self, policy):
+        self.policy = self.policy.sum_with(policy)
+        return self
+
+    def __repr__(self):
+        return f"RootPolicy {repr(self.policy)}"
+
+    def to_json(self):
+        return self.policy.to_json()
+
+    def get_contexts_for(self, permission):
+        #FIXME This isn't done, yet
+        if isinstance(self.policy, PolicyDict):
+            return self.policy.keys()
+        if isinstance(self.policy, CompoundPolicy) and self.policy.expressions is None:
+            return self.policy.policy_dict.keys()
+        return None

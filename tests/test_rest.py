@@ -8,6 +8,7 @@ from safetydance import step_data
 from safetydance_django.test import *
 from safetydance_test import scripted_test, Given, When, Then, And
 from scoped_rbac.models import Role
+from scoped_rbac.rbac_contexts import SOME_CONTEXT
 from .step_extensions import *
 import logging
 import pytest
@@ -215,7 +216,6 @@ def test_list_filtering(superuser, editor_user):
     Then.role_list_contains(role_in_context1_url)
     And.role_list_does_not_contain(role_in_context2_url)
 
-
 @pytest.mark.django_db
 @scripted_test
 def test_get_user_rbac_policy(superuser, editor_user):
@@ -225,3 +225,26 @@ def test_get_user_rbac_policy(superuser, editor_user):
     And.http.response_json_is(True)
 
     # TODO more comprehensive testing
+    context1_name = fake.pystr(min_chars=10, max_chars=20)
+    context2_name = fake.pystr(min_chars=10, max_chars=20)
+
+    Given.http.force_authenticate(user=superuser.instance)
+    And.create_editor_role(context1_name)
+    role_in_context1_url = role_url
+    And.create_editor_role(context2_name)
+    role_in_context2_url = role_url
+
+    # validate editor_user sees only role in context1 in listing
+    Given.assign_role(role_in_context1_url, editor_user, context1_name)
+    And.assign_role(role_in_context2_url, editor_user, context2_name)
+    And.http.get(role_in_context1_url)
+    role_in_context1_json = http_response.json()
+    And.http.get(role_in_context2_url)
+    role_in_context2_json = http_response.json()
+    When.http.force_authenticate(user=editor_user.instance)
+    And.get_user_rbac_policy()
+    Then.http.response_json_is({
+        context1_name: role_in_context1_json["definition"],
+        context2_name: role_in_context2_json["definition"],
+        SOME_CONTEXT: role_in_context1_json["definition"],
+        })

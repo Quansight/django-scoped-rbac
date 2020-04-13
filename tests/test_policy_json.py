@@ -1,6 +1,10 @@
 import json
-from scoped_rbac.policy import Permission, RecursivePolicyMap
-from scoped_rbac.policy_json import json_loads_policy
+from scoped_rbac.policy import (
+    Permission,
+    PolicyDict,
+    RootPolicy,
+    policy_from_json,
+)
 
 
 permission_one = Permission(action="GET", resource_type="One")
@@ -12,11 +16,10 @@ permission_action_only = Permission(action="GET", resource_type=None)
 
 
 def policy_for(context_id, json_policy):
-    policy = RecursivePolicyMap()
+    policy_dict = dict()
     if isinstance(json_policy, str):
-        json_policy = json_loads_policy(json_policy)
-    policy.add(json_policy, context_id)
-    return policy
+        json_policy = json.loads(json_policy)
+    return RootPolicy().add_json_policy_for_context(json_policy, context_id)
 
 
 class TestJsonPolicy:

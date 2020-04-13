@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 # from django.urls import reverse
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
@@ -142,7 +143,8 @@ class UserViewSet(AccessControlledModelViewSet):
         return UserResourceType.iri
 
 
-class UserRbacPolicyView(AccessControlledAPIView, APIView):
+class UserRbacPolicyView(APIView):
+    permission_classes = [IsAuthenticated,]
     @property
     def resource_type_iri(self):
         return "rbac.Policy"

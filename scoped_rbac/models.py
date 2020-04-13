@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from .policy_json import policy_from_json
+from .policy import policy_from_json
 from .fields import JSONField
 from .registry import ResourceType, register_access_controlled_model
 import logging
