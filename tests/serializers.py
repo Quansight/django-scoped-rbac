@@ -1,8 +1,5 @@
 from datetime import datetime
-from drf_scrud.serializers import (
-        EnvelopeCollectionSerializer,
-        EnvelopeItemSerializer,
-        )
+from drf_scrud.serializers import EnvelopeCollectionSerializer, EnvelopeItemSerializer
 from rest_framework import serializers
 from rest_framework.reverse import reverse_lazy
 from .models import ExampleAccessControlledModel
@@ -10,7 +7,8 @@ import hashlib
 
 
 class ExampleAccessControlledModelSerializer(
-        EnvelopeItemSerializer, serializers.HyperlinkedModelSerializer):
+    EnvelopeItemSerializer, serializers.HyperlinkedModelSerializer
+):
     class Meta:
         model = ExampleAccessControlledModel
         fields = ("id", "name")

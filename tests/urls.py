@@ -7,12 +7,15 @@ from . import rest
 # from . import rest
 
 router = DefaultRouter()
-router.register(r"example-access-controlled-models", rest.ExampleAccessControlledModelViewSet)
-router.registry.extend(scoped_rbac.urls.router.registry)
+router.register(
+    r"example-access-controlled-models", rest.ExampleAccessControlledModelViewSet
+)
+# router.registry.extend(scoped_rbac.urls.router.registry)
 schema_view = get_schema_view("Test Scoped RBAC API")
 
 urlpatterns = [
     url(r"^api/", include(router.urls), name="api"),
+    url(r"^api/scoped-rbac/", include(scoped_rbac.urls), name="scoped-rbac"),
     url(r"^api/schema", schema_view, name="api-schema"),
     url(
         r"^api/rest-framework/auth",

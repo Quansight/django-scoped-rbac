@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 from safetydance import step, step_data
+
 # from safetydance_django.steps import *
 from safetydance_django.test import *
 from safetydance_test import scripted_test, Given, When, Then, And, TestStepPrefix
@@ -21,30 +22,21 @@ role_url = step_data(str)
 def create_editor_role(context_url):
     # Create a role
     When.http.post(
-            reverse("role-list"),
-            {
-                "definition": {
-                    "http.POST": [
-                        Role.resource_type.iri,
-                        ],
-                    "http.GET": [
-                        Role.resource_type.iri,
-                        Role.resource_type.list_iri,
-                        ],
-                    "http.PUT": [
-                        Role.resource_type.iri,
-                        ],
-                    "http.DELETE": [
-                        Role.resource_type.iri,
-                        ],
-                },
-                # TODO add these fields
-                # "name": role_name,
-                # "description": role_description,
-                "rbac_context": context_url,
+        reverse("role-list"),
+        {
+            "definition": {
+                "http.POST": [Role.resource_type.iri],
+                "http.GET": [Role.resource_type.iri, Role.resource_type.list_iri],
+                "http.PUT": [Role.resource_type.iri],
+                "http.DELETE": [Role.resource_type.iri],
             },
-            format="json",
-        )
+            # TODO add these fields
+            # "name": role_name,
+            # "description": role_description,
+            "rbac_context": context_url,
+        },
+        format="json",
+    )
     logging.info(http_response)
     logging.info(http_response.data)
     Then.http.status_code_is(201)
@@ -85,3 +77,8 @@ def assign_role(role_url, user, context_url):
         format="json",
     )
     Then.http.status_code_is(201)
+
+
+@step
+def get_user_rbac_policy():
+    When.http.get(reverse("user-rbac-policy"), format="json")

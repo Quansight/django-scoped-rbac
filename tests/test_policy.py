@@ -1,10 +1,14 @@
 from scoped_rbac.policy import (
-    AllowedPolicy,
+    CompoundPolicy,
+    Expression,
+    ExpressionList,
     Permission,
     Policy,
-    PolicyList,
-    RecursivePolicyMap,
-    ZeroPolicy,
+    PolicyDict,
+    PolicySet,
+    POLICY_TRUE,
+    POLICY_FALSE,
+    RootPolicy,
 )
 
 
@@ -14,52 +18,148 @@ permission_never_used = Permission(action="NEVER", resource_type="shouldn't matt
 permission_action_only = Permission(action="GET", resource_type=None)
 
 
-class TestPolicyList:
-    """
-    TODO test with conditionals.
-    """
+class TestPolicyTrue:
+    def test_should_allow(self):
+        assert POLICY_TRUE.should_allow("anything") is True
 
-    def test_empty_list(self):
-        policy = PolicyList()
-        assert policy.should_allow(permission_one, "a") is False
+    def test_sum_with_policy_true(self):
+        assert POLICY_TRUE.sum_with(POLICY_TRUE) is POLICY_TRUE
 
-    def test_non_empty_list(self):
-        policy = ZeroPolicy().sum_with(AllowedPolicy())
-        assert policy.should_allow(permission_one, "a") is True
+    def test_sum_with_policy_false(self):
+        assert POLICY_TRUE.sum_with(POLICY_FALSE) is POLICY_TRUE
 
-        policy = Policy().sum_with(policy)
-        assert policy.should_allow(permission_one, "a") is True
+    def test_to_json(self):
+        assert POLICY_TRUE.to_json() is True
 
 
-class TestRecursivePolicyMap:
-    def test_empty(self):
-        policy = RecursivePolicyMap()
-        assert policy.should_allow(permission_one, "a") is False
+class TestPolicyFalse:
+    def test_should_allow(self):
+        assert POLICY_FALSE.should_allow("anything") is False
 
-    def test_with_paths(self):
-        root_policy = RecursivePolicyMap()
-        root_policy.add(AllowedPolicy(), "a", permission_action_only.action)
-        root_policy.add(AllowedPolicy(), "b", *permission_one)
-        root_policy.add(AllowedPolicy(), "c", *permission_one)
-        root_policy.add(AllowedPolicy(), "c", *permission_two)
-        root_policy.add(AllowedPolicy(), "d")
+    def test_sum_with_policy_true(self):
+        assert POLICY_FALSE.sum_with(POLICY_TRUE) is POLICY_TRUE
 
-        assert root_policy.should_allow(permission_one, "a") is True
-        assert root_policy.should_allow(permission_two, "a") is True
-        assert root_policy.should_allow(permission_action_only, "a") is True
-        assert root_policy.should_allow(permission_never_used, "a") is False
+    def test_sum_with_policy_false(self):
+        assert POLICY_FALSE.sum_with(POLICY_FALSE) is POLICY_FALSE
 
-        assert root_policy.should_allow(permission_one, "b") is True
-        assert root_policy.should_allow(permission_two, "b") is False
-        assert root_policy.should_allow(permission_action_only, "b") is False
-        assert root_policy.should_allow(permission_never_used, "b") is False
+    def test_to_json(self):
+        assert POLICY_FALSE.to_json() is False
 
-        assert root_policy.should_allow(permission_one, "c") is True
-        assert root_policy.should_allow(permission_two, "c") is True
-        assert root_policy.should_allow(permission_action_only, "c") is False
-        assert root_policy.should_allow(permission_never_used, "c") is False
 
-        assert root_policy.should_allow(permission_one, "d") is True
-        assert root_policy.should_allow(permission_two, "d") is True
-        assert root_policy.should_allow(permission_action_only, "d") is True
-        assert root_policy.should_allow(permission_never_used, "d") is True
+class TestPolicySet:
+    def test_should_allow(self):
+        policy = PolicySet()
+        assert policy.should_allow("one") is False
+        assert policy.should_allow("two") is False
+        assert policy.should_allow("three") is False
+
+        policy = PolicySet("one", "two")
+        assert policy.should_allow("one") is True
+        assert policy.should_allow("two") is True
+        assert policy.should_allow("three") is False
+
+    def test_sum_with_policy_true(self):
+        policy = PolicySet()
+        assert policy.sum_with(POLICY_TRUE) is POLICY_TRUE
+
+    def test_sum_with_policy_false(self):
+        policy = PolicySet()
+        assert policy.sum_with(POLICY_FALSE) is policy
+
+    def test_sum_with_policy_set(self):
+        policy1 = PolicySet("one", "two")
+        policy2 = PolicySet("three")
+        policy_sum = policy1.sum_with(policy2)
+        assert policy_sum is not policy1
+        assert policy_sum is not policy2
+        assert policy_sum.should_allow("one") is True
+        assert policy_sum.should_allow("two") is True
+        assert policy_sum.should_allow("three") is True
+        assert policy_sum.should_allow("four") is False
+
+    def test_to_json(self):
+        policy = PolicySet("one", "two")
+        policy_json = policy.to_json()
+        assert isinstance(policy_json, list)
+        assert "one" in policy_json
+        assert "two" in policy_json
+
+
+class TestPolicyDict:
+    def test_should_allow(self):
+        policy = PolicyDict(
+            {
+                "one": POLICY_TRUE,
+                "two": PolicySet("a", "b"),
+                "three": PolicyDict({"foo": POLICY_TRUE}),
+                "context": PolicyDict({"action": PolicySet("resource1", "resource2")}),
+            }
+        )
+        assert policy.should_allow("anything") is False
+        assert policy.should_allow("one") is True
+        assert policy.should_allow("two", "a") is True
+        assert policy.should_allow("two", "b") is True
+        assert policy.should_allow("two", "anything") is False
+        assert policy.should_allow("three", "foo") is True
+        assert policy.should_allow("three", "anything") is False
+        assert policy.should_allow("context", "action", "resource1") is True
+        assert policy.should_allow("context", "action", "resource2") is True
+        assert policy.should_allow("context", "action", "resource3") is False
+
+    def test_sum_with_policy_true(self):
+        policy = PolicyDict({"one": POLICY_TRUE})
+        assert policy.sum_with(POLICY_TRUE) is POLICY_TRUE
+
+    def test_sum_with_policy_false(self):
+        policy = PolicyDict({"one": POLICY_TRUE})
+        assert policy.sum_with(POLICY_FALSE) is policy
+
+    def test_sum_with_policy_set(self):
+        policy = PolicyDict({"one": POLICY_TRUE})
+        policy = policy.sum_with(PolicySet("two"))
+        assert policy.should_allow("one") is True
+        assert policy.should_allow("two") is True
+        assert policy.should_allow("three") is False
+
+    def test_sum_with_policy_dict(self):
+        policy1 = PolicyDict(
+            {
+                "1": POLICY_TRUE,
+                "2": PolicyDict(
+                    {"2_1": POLICY_TRUE, "2_2": PolicySet("2_2_1", "2_2_2")}
+                ),
+            }
+        )
+        policy2 = PolicyDict(
+            {"1": PolicySet("one"), "2": PolicySet("3_1", "3_2"), "3": POLICY_TRUE}
+        )
+
+        sum_policy = policy1.sum_with(policy2)
+        assert sum_policy.should_allow("1", "anything") is True
+        assert sum_policy.should_allow("2", "2_1", "anything") is True
+        assert sum_policy.should_allow("2", "2_2") is False
+        assert sum_policy.should_allow("2", "2_2", "2_2_1") is True
+        assert sum_policy.should_allow("2", "2_2", "2_2_2") is True
+        assert sum_policy.should_allow("2", "2_2", "anything") is False
+        assert sum_policy.should_allow("2", "3_1", "anything") is True
+        assert sum_policy.should_allow("2", "3_2", "anything") is True
+        assert sum_policy.should_allow("2", "anything", "anything") is False
+        assert sum_policy.should_allow("3", "anything", "anything") is True
+        assert sum_policy.should_allow("anything", "anything", "anything") is False
+
+    def test_to_json(self):
+        policy = PolicyDict(
+            {
+                "one": POLICY_TRUE,
+                "two": PolicySet("a", "b"),
+                "three": PolicyDict({"foo": POLICY_TRUE}),
+                "context": PolicyDict({"action": PolicySet("resource1", "resource2")}),
+            }
+        )
+        policy_json = policy.to_json()
+        assert policy_json["one"] is True
+        assert "a" in policy_json["two"]
+        assert "b" in policy_json["two"]
+        assert policy_json["three"]["foo"] is True
+        assert "resource1" in policy_json["context"]["action"]
+        assert "resource2" in policy_json["context"]["action"]

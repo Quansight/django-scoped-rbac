@@ -5,19 +5,17 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('scoped_rbac', '0003_auto_20200223_1846'),
-    ]
+    dependencies = [("scoped_rbac", "0003_auto_20200223_1846")]
 
     operations = [
         migrations.AddField(
-            model_name='role',
-            name='rbac_context',
-            field=models.CharField(default='', max_length=2048),
+            model_name="role",
+            name="rbac_context",
+            field=models.CharField(default="", max_length=2048),
         ),
         migrations.AddField(
-            model_name='roleassignment',
-            name='rbac_context',
-            field=models.CharField(default='', max_length=2048),
+            model_name="roleassignment",
+            name="rbac_context",
+            field=models.CharField(default="", max_length=2048),
         ),
     ]

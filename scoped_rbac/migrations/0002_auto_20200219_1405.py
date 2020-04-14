@@ -6,28 +6,19 @@ import scoped_rbac.fields
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('scoped_rbac', '0001_initial'),
-    ]
+    dependencies = [("scoped_rbac", "0001_initial")]
 
     operations = [
         migrations.RenameField(
-            model_name='role',
-            old_name='rbac_context',
-            new_name='context',
+            model_name="role", old_name="rbac_context", new_name="context"
         ),
         migrations.RenameField(
-            model_name='roleassignment',
-            old_name='rbac_context',
-            new_name='context',
+            model_name="roleassignment", old_name="rbac_context", new_name="context"
         ),
-        migrations.RemoveField(
-            model_name='role',
-            name='definition_json',
-        ),
+        migrations.RemoveField(model_name="role", name="definition_json"),
         migrations.AddField(
-            model_name='role',
-            name='definition',
+            model_name="role",
+            name="definition",
             field=scoped_rbac.fields.JSONField(default={}),
             preserve_default=False,
         ),

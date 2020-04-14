@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from .policy_json import policy_from_json
+from .policy import policy_from_json
 from .fields import JSONField
 from .registry import ResourceType, register_access_controlled_model
 import logging
@@ -14,6 +14,7 @@ class IdentifiedByIRI(object):
 
     Subclasses **MUST** define a `resource_type: ResourceType` property.
     """
+
     ...
 
 
@@ -59,9 +60,5 @@ class RoleAssignment(AccessControlledModel):
     )
 
 
-#TODO Figure out how to support custom User models
-UserResourceType = ResourceType(
-    "rbac.User",
-    "User",
-    "A resource representing a User.",
-)
+# TODO Figure out how to support custom User models
+UserResourceType = ResourceType("rbac.User", "User", "A resource representing a User.")

@@ -8,6 +8,7 @@ class RbacFilter(BaseFilterBackend):
     Filter that only allows users to see the objects they're authorized to access for
     the request.
     """
+
     def filter_queryset(self, request, queryset, view):
         if request.method == "GET":
             return self.filter_queryset_for_get(request, queryset, view)
@@ -16,9 +17,11 @@ class RbacFilter(BaseFilterBackend):
 
     def filter_queryset_for_get(self, request, queryset, view):
         policy = policy_for(request)
-        contexts = policy.get_contexts_for(Permission(
-                http_action_iri_for(request),
-                view.resource_type_iri_for(request)))
+        contexts = policy.get_contexts_for(
+            Permission(
+                http_action_iri_for(request), view.resource_type_iri_for(request)
+            )
+        )
         if contexts is None:
             return queryset
         if not contexts:
