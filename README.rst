@@ -2,6 +2,9 @@
 django_scoped_rbac
 ==================
 
+.. image:: https://github.com/Quansight/django-scoped-rbac/workflows/Django%20CI/badge.svg
+   :target: Django CI
+
 A rich and flexible Django application for role-based access control within
 distinct access control scopes supporting Django Rest Framework.
 
