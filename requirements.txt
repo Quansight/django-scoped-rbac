@@ -1,7 +1,6 @@
 # This file may be used to create an environment using:
 # $ conda create --name <env> --file <this file>
 # platform: linux-64
-_libgcc_mutex=0.1=main
 alabaster=0.7.12=py37_0
 appdirs=1.4.3=py37h28b3542_0
 asn1crypto=1.3.0=py37_0
