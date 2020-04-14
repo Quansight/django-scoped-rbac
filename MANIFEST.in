@@ -1,6 +1,0 @@
-include README.md
-include LICENSE
-recursive-include docs
-global-exclude __pycache__
-global-exclude *.py[co]
-prune tests
