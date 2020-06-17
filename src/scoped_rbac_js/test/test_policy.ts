@@ -1,12 +1,11 @@
 import test from 'ava';
 import rbac from '../src/scoped-rbac';
 
-const permissionOne = { "action": "GET", "resource_type": "One" };
-const permissionTwo = { "action": "GET", "resource_type": "Two" };
-const permissionSuperUserOnly = {
-  "action": "NEVER", "resource_type": "shouldn't matter" };
+const permissionOne = { action: "GET", resourceType: "One" };
+const permissionTwo = { action: "GET", resourceType: "Two" };
+const permissionSuperUserOnly = { action: "NEVER", resourceType: "shouldn't matter" };
 
-function policyFor(context: string, jsonPolicy: rbac.RootPolicy) {
+function policyFor(context: string, jsonPolicy: rbac.PolicySource) {
   const rootPolicy = new rbac.RootPolicy();
   rootPolicy.addJsonPolicyForContext(jsonPolicy, context);
   return rootPolicy;
@@ -14,12 +13,12 @@ function policyFor(context: string, jsonPolicy: rbac.RootPolicy) {
 
 test('empty policy', t => {
   let policy = policyFor("a", "{}")
-  t.false(policy.shouldAllow(permissionOne, "a"));
-  t.false(policy.shouldAllow(permissionOne, "b"));
-  t.false(policy.shouldAllow(permissionSuperUserOnly, "a"));
+  t.false(policy.shouldAllow(permissionOne, "a", "One"));
+  t.false(policy.shouldAllow(permissionOne, "b", "One"));
+  t.false(policy.shouldAllow(permissionSuperUserOnly, "a", "One"));
   policy = policyFor("a", "[]")
-  t.false(policy.shouldAllow(permissionOne, "a"));
-  t.false(policy.shouldAllow(permissionOne, "b"));
-  t.false(policy.shouldAllow(permissionSuperUserOnly, "a"));
+  t.false(policy.shouldAllow(permissionOne, "a", "One"));
+  t.false(policy.shouldAllow(permissionOne, "b", "One"));
+  t.false(policy.shouldAllow(permissionSuperUserOnly, "a", "One"));
   t.fail();
 });

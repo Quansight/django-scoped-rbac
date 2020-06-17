@@ -69,5 +69,6 @@
   "references": [
     { "path": "src" },
     { "path": "test"}
-  ]
+  ],
+  "files": []
 }

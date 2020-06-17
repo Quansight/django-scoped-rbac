@@ -1,15 +1,15 @@
 export interface Policy {
-  shouldAllow(args: string[], subject: object): boolean;
+  shouldAllow(args: string[], subject: any): boolean;
   sumWith(otherPolicy: Policy): Policy;
 }
 
 export abstract class PolicyBoolean implements Policy {
-  abstract shouldAllow(args: string[], subject: object): boolean;
+  abstract shouldAllow(args: string[], subject: any): boolean;
   abstract sumWith(otherPolicy: Policy): Policy;
 }
 
 export class PolicyTrue extends PolicyBoolean {
-  shouldAllow(args: string[], subject: object): boolean {
+  shouldAllow(args: string[], subject: any): boolean {
     return true;
   }
 
@@ -19,7 +19,7 @@ export class PolicyTrue extends PolicyBoolean {
 }
 
 export class PolicyFalse extends PolicyBoolean {
-  shouldAllow(args: string[], subject: object): boolean {
+  shouldAllow(args: string[], subject: any): boolean {
     return false;
   }
 
@@ -41,7 +41,7 @@ export class PolicySet implements Policy {
     }
   }
 
-  shouldAllow(args: string[], subject: object): boolean {
+  shouldAllow(args: string[], subject: any): boolean {
     if (args.length == 0) return false;
     let key = args[0];
     return this.allowed.has(key);
@@ -72,7 +72,7 @@ export class PolicyDict implements Policy {
     }
   }
 
-  shouldAllow(args: string[], subject: object): boolean {
+  shouldAllow(args: string[], subject: any): boolean {
     if (args.length == 0) return false;
     let key = args[0];
     let policy = this.policies[key];
@@ -125,6 +125,8 @@ export interface Permission {
   resourceType: string;
 }
 
+export type PolicySource = boolean | string | string[] | Map<string,PolicySource>;
+
 export class RootPolicy {
   policy: Policy;
 
@@ -132,14 +134,18 @@ export class RootPolicy {
     this.policy = POLICY_FALSE;
   }
 
-  shouldAllow(permission: Permission, contextId: string, subject: object): boolean {
+  shouldAllow(permission: Permission, contextId: string, subject: any): boolean {
     return this.policy.shouldAllow(
       [contextId, permission.action, permission.resourceType], subject);
   }
 
-  static policyFromJson(jsonPolicy): Policy {
-    if (jsonPolicy === true) {
-      return POLICY_TRUE;
+  static policyFromJson(jsonPolicy: PolicySource): Policy {
+    if (typeof jsonPolicy === "boolean") {
+      if (jsonPolicy === true) {
+        return POLICY_TRUE;
+      } else {
+        return POLICY_FALSE;
+      }
     }
     if (typeof jsonPolicy === "string") {
       return new PolicySet([jsonPolicy]);
@@ -147,8 +153,8 @@ export class RootPolicy {
     if (jsonPolicy instanceof Array) {
       return new PolicySet(jsonPolicy);
     }
-    if (jsonPolicy instanceof Object) {
-      let policies = new Object();
+    if (jsonPolicy instanceof Map) {
+      let policies = new Map<string,Policy>();
       for (let key of Object.keys(jsonPolicy)) {
         let policy = RootPolicy.policyFromJson(jsonPolicy[key]);
         policies[key] = policy;
@@ -158,16 +164,14 @@ export class RootPolicy {
     return POLICY_FALSE;
   }
 
-  addJsonPolicyForContext(jsonPolicy: object, context: string): RootPolicy {
-    let policy = RootPolicy.policyFromJson(jsonPolicy);
-    this.addPolicyForContext(policy, context);
-    return this;
+  addJsonPolicyForContext(jsonPolicy: PolicySource, context: string): RootPolicy {
+    const policy = RootPolicy.policyFromJson(jsonPolicy);
+    return this.addPolicyForContext(policy, context);
   }
 
   addPolicyForContext(policy: Policy, context: string): RootPolicy {
-    let contextPolicy = new PolicyDict({context: policy});
-    this.addPolicy(contextPolicy);
-    return this;
+    const contextPolicy = new PolicyDict({context: policy});
+    return this.addPolicy(contextPolicy);
   }
 
   addPolicy(policy: Policy): RootPolicy {
