@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "outDir": "../lib",
+    "composite": true,
+    "declaration": true
+  },
+  "include": [ "." ],
+  "extends": "../tsconfig.json"
+}

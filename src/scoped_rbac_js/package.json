@@ -5,9 +5,10 @@
   "main": "scoped-rbac.js",
   "scripts": {
     "test": "ava",
-    "build": "tsc",
+    "build": "tsc -b",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
-    "lint": "tslint -p tsconfig.json"
+    "lint": "tslint -p tsconfig.json",
+    "tsc": "tsc"
   },
   "author": "David Charboneau",
   "license": "MIT",
@@ -21,14 +22,13 @@
     "typescript": "^3.9.5"
   },
   "ava": {
-    "files": [
-      "test/*.js"
-    ],
     "typescript": {
       "rewritePaths": {
-        "src/": "lib/"
+        "test/": "lib/__test__/"
       }
     }
   },
-  "files": ["lib/**/*"]
+  "files": [
+    "lib/**/*"
+  ]
 }
