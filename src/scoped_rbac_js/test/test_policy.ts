@@ -1,5 +1,5 @@
 import test from 'ava';
-import rbac from '../src/scoped-rbac';
+import * as rbac from '../src/scoped-rbac';
 
 const permissionOne = { action: "GET", resourceType: "One" };
 const permissionTwo = { action: "GET", resourceType: "Two" };
@@ -20,5 +20,4 @@ test('empty policy', t => {
   t.false(policy.shouldAllow(permissionOne, "a", "One"));
   t.false(policy.shouldAllow(permissionOne, "b", "One"));
   t.false(policy.shouldAllow(permissionSuperUserOnly, "a", "One"));
-  t.fail();
 });

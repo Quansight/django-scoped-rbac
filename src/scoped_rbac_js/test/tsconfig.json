@@ -8,6 +8,5 @@
   "references": [
     { "path": "../src" }
   ],
-  "extends": "../tsconfig.json",
-  "prepend": "../src"
+  "extends": "../tsconfig.json"
 }

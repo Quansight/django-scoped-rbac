@@ -1,3 +1,5 @@
+// import console = require('console');
+
 export interface Policy {
   shouldAllow(args: string[], subject: any): boolean;
   sumWith(otherPolicy: Policy): Policy;
@@ -65,17 +67,17 @@ export class PolicySet implements Policy {
 export class PolicyDict implements Policy {
   policies: Map<string,Policy>;
 
-  constructor(policies: Object) {
-    policies = new Map<string,Policy>();
-    for (let key of Object.keys(policies)) {
+  constructor(policies: object) {
+    this.policies = new Map<string,Policy>();
+    for (const key of Object.keys(policies)) {
       this.policies[key] = policies[key];
     }
   }
 
   shouldAllow(args: string[], subject: any): boolean {
-    if (args.length == 0) return false;
-    let key = args[0];
-    let policy = this.policies[key];
+    if (args.length === 0) return false;
+    const key = args[0];
+    const policy = this.policies[key];
     if (policy) {
       return policy.shouldAllow(args.slice(1), subject);
     }
