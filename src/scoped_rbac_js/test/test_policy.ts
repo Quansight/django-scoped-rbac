@@ -1,9 +1,12 @@
+import console = require('console');
 import test from 'ava';
 import * as rbac from '../src/scoped-rbac';
 
+const dummyResourceType = "resourceType shouldn't matter for this test";
+const dummySubject = { description: "subject instance shouldn't matter for htis test" };
 const permissionOne = { action: "GET", resourceType: "One" };
 const permissionTwo = { action: "GET", resourceType: "Two" };
-const permissionSuperUserOnly = { action: "NEVER", resourceType: "shouldn't matter" };
+const permissionSuperUserOnly = { action: "NEVER", resourceType: dummyResourceType };
 
 function policyFor(context: string, jsonPolicy: rbac.PolicySource) {
   const rootPolicy = new rbac.RootPolicy();
@@ -12,12 +15,45 @@ function policyFor(context: string, jsonPolicy: rbac.PolicySource) {
 }
 
 test('empty policy', t => {
-  let policy = policyFor("a", "{}")
-  t.false(policy.shouldAllow(permissionOne, "a", "One"));
-  t.false(policy.shouldAllow(permissionOne, "b", "One"));
-  t.false(policy.shouldAllow(permissionSuperUserOnly, "a", "One"));
-  policy = policyFor("a", "[]")
-  t.false(policy.shouldAllow(permissionOne, "a", "One"));
-  t.false(policy.shouldAllow(permissionOne, "b", "One"));
-  t.false(policy.shouldAllow(permissionSuperUserOnly, "a", "One"));
+  const policyObject = {};
+  let policy = policyFor("a", policyObject);
+  t.false(policy.shouldAllow(permissionOne, "a", dummySubject));
+  t.false(policy.shouldAllow(permissionOne, "b", dummySubject));
+  t.false(policy.shouldAllow(permissionSuperUserOnly, "a", dummySubject));
+  policy = policyFor("a", [])
+  t.false(policy.shouldAllow(permissionOne, "a", dummySubject));
+  t.false(policy.shouldAllow(permissionOne, "b", dummySubject));
+  t.false(policy.shouldAllow(permissionSuperUserOnly, "a", dummySubject));
+});
+
+test('all allowed', t => {
+  const policy = policyFor("a", true);
+  t.true(policy.shouldAllow(permissionOne, "a", dummySubject));
+  t.true(policy.shouldAllow(permissionSuperUserOnly, "a", dummySubject));
+  t.false(policy.shouldAllow(permissionOne, "b", dummySubject));
+  t.false(policy.shouldAllow(permissionSuperUserOnly, "b", dummySubject));
+});
+
+test('string allowed', t => {
+  const policy = policyFor("a", "GET");
+  t.true(policy.shouldAllow(permissionOne, "a", dummySubject));
+  t.false(policy.shouldAllow(permissionSuperUserOnly, "a", dummySubject));
+  t.false(policy.shouldAllow(permissionOne, "b", dummySubject));
+  t.false(policy.shouldAllow(permissionSuperUserOnly, "b", dummySubject));
+});
+
+test('list allowed', t => {
+  const policy = policyFor("a", [ "GET", "POST" ]);
+  t.true(policy.shouldAllow(
+    {action: "GET", resourceType: dummyResourceType}, "a", dummySubject));
+  t.true(policy.shouldAllow(
+    {action: "POST", resourceType: dummyResourceType}, "a", dummySubject));
+  t.false(policy.shouldAllow(
+    {action: "DELETE", resourceType: dummyResourceType}, "a", dummySubject));
+  t.false(policy.shouldAllow(
+    {action: "GET", resourceType: dummyResourceType}, "b", dummySubject));
+  t.false(policy.shouldAllow(
+    {action: "POST", resourceType: dummyResourceType}, "b", dummySubject));
+  t.false(policy.shouldAllow(
+    {action: "DELETE", resourceType: dummyResourceType}, "b", dummySubject));
 });
