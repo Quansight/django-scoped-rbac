@@ -1,7 +1,5 @@
 /* tslint:disable:max-classes-per-file */
 
-import console = require('console');
-
 export interface Policy {
   shouldAllow(args: string[], subject: any): boolean;
   sumWith(otherPolicy: Policy): Policy;
@@ -91,9 +89,6 @@ export class PolicyDict implements Policy {
     if (args.length === 0) return false;
     const key = args[0];
     const policy = this.policies.get(key);
-    console.log("PolicyDict.shouldAllow", args, this.policies);
-    console.log(policy);
-    console.log(this);
     if (policy) {
       return policy.shouldAllow(args.slice(1), subject);
     }
@@ -182,7 +177,7 @@ export class RootPolicy {
       const policies = new Map<string,Policy>();
       for (const key of Object.keys(jsonPolicy)) {
         const policy = RootPolicy.policyFromJson(jsonPolicy[key]);
-        policies[key] = policy;
+        policies.set(key, policy);
       }
       return new PolicyDict(policies);
     }
@@ -191,7 +186,6 @@ export class RootPolicy {
 
   addJsonPolicyForContext(jsonPolicy: PolicySource, context: string): RootPolicy {
     const policy = RootPolicy.policyFromJson(jsonPolicy);
-    console.log("addJsonPolicyForContext policy = ", policy);
     return this.addPolicyForContext(policy, context);
   }
 
